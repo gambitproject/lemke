@@ -1,11 +1,10 @@
 # LCP solver
 
+import fractions
+import math  # gcd
 import sys
-import fractions 
-import math # gcd
 
-from . import columnprint
-from . import utils
+from . import columnprint, utils
 
 # global defaults
 lcpfilename="lcp"
@@ -45,12 +44,12 @@ options: -v, -verbose : printout intermediate tableaus
     return
 
 def printout(*s):
-    print(*s, file=filehandle) 
-
+    print(*s, file=filehandle)
+
 # LCP data M,q,d
-class lcp: 
+class lcp:
     # create LCP either with given n or from file
-    def __init__(self, arg): 
+    def __init__(self, arg):
         if isinstance(arg, int): # arg is an integer
             n = self.n = arg
             # self.M = np.zeros( (n,n), dtype=fractions.Fraction)
@@ -82,7 +81,7 @@ class lcp:
                 self.M[i]=[0]*n
             self.q = [0]*n
             self.d = [0]*n
-            needfracs =  n*n + 2*n 
+            needfracs =  n*n + 2*n
             if len(words) != needfracs + 5:
                 # printout("in lcp file '",filename,"':")
                 printout("in lcp file "+repr(filename)+":")
@@ -103,12 +102,12 @@ class lcp:
                     k+=1
                     self.d = utils.tovector(n,words,k)
                     k+=n
-                else: 
+                else:
                     printout("in lcp file "+repr(filename)+":")
                     printout("expected one of 'M=' 'q=' 'd=', got",repr(words[k]))
                     exit(1)
-            return 
-
+            return
+
     def __str__(self):
         n=self.n
         M=self.M
@@ -132,16 +131,16 @@ class lcp:
         # printout("M[0][0]", type(M[0][0]))
         return "n= "+str(n)+"\n"+str(m)
     #######  end of class lcp
-
+
 class tableau:
     # filling the tableau from the LCP instance Mqd
-    def __init__(self, Mqd): 
+    def __init__(self, Mqd):
         self.n = Mqd.n
         n = self.n
         self.scalefactor = [0]*(n+2) # 0 for z0, n+1 for RHS
         # A = tableau, long integer entries
         # self.A = np.zeros( (n,n+2), dtype=object)
-        self.A = [[]]*n 
+        self.A = [[]]*n
         for i in range(n):
             self.A[i]=[0]*(n+2)
         self.determinant = 1
@@ -186,12 +185,12 @@ class tableau:
                 else:
                     den = Mqd.M[i][j-1].denominator
                     num = Mqd.M[i][j-1].numerator
-                self.A[i][j] = (factor//den) * num 
+                self.A[i][j] = (factor//den) * num
             self.determinant = -1
         return
-
+
     def __str__(self):
-        out = "Determinant: "+str(self.determinant) 
+        out = "Determinant: "+str(self.determinant)
         n = self.n
         tabl = columnprint.columnprint(n+3)
         tabl.makeLeft(0)
@@ -218,37 +217,37 @@ class tableau:
         out += "\n"+ str(tabl)
         out += "\n"+ "-----------------end of tableau-----------------"
         return out
-        
+
     def vartoa(self, v): # variable as as string w1..wn or z0..zn
         if (v > self.n):
             return "w"+str(v-self.n)
         else:
             return "z"+str(v)
-    
+
     def createsol(self): # get solution from current tableau
         n = self.n
         for i in range(2*n+1):
             row = self.bascobas[i]
             if row < n: # i is a basic variable
                 num = self.A[row][n+1]
-                # value of  Z(i):   scfa[Z(i)]*rhs[row] / (scfa[RHS]*det)    
-                # value of  W(i-n): rhs[row] / (scfa[RHS]*det)    
+                # value of  Z(i):   scfa[Z(i)]*rhs[row] / (scfa[RHS]*det)
+                # value of  W(i-n): rhs[row] / (scfa[RHS]*det)
                 if i <= n: # computing Z(i)
-                    num *= self.scalefactor[i] 
+                    num *= self.scalefactor[i]
                 self.solution[i] = fractions.Fraction(num,
                     self.determinant*self.scalefactor[n+1])
             else: # i is nonbasic
                 self.solution[i]=fractions.Fraction(0)
-   
+
     def outsol(self): # string giving solution, after createsol()
         # printout in columns to check complementarity
         n = self.n
         sol = columnprint.columnprint(n+2)
         sol.sprint("basis=")
         for i in range(n+1):
-            if (self.bascobas[i]<n): #  Z(i) is a basic variable 
+            if (self.bascobas[i]<n): #  Z(i) is a basic variable
                 s = self.vartoa(i)
-            elif i>0 and self.bascobas[n+i]<n : #  W(i) is a basic variable 
+            elif i>0 and self.bascobas[n+i]<n : #  W(i) is a basic variable
                 s = self.vartoa(n+i)
             else:
                 s = "  "
@@ -259,7 +258,7 @@ class tableau:
             if i == n: # new line since printouting slack vars  w  next
                 sol.sprint ("w=")
                 sol.sprint ("") # no W(0)
-        return str(sol) 
+        return str(sol)
 
     def assertbasic(self, v, info): # assert that v is basic
         if (self.bascobas[v] >= self.n):
@@ -281,7 +280,7 @@ class tableau:
         s = "leaving: " + self.vartoa(leave).ljust(5)
         s += "entering: " + self.vartoa(enter)
         printout (s)
-        return 
+        return
 
     def raytermination(self, enter):
         printout("Ray termination when trying to enter",self.vartoa(enter))
@@ -300,10 +299,13 @@ class tableau:
                     if j==i:
                         printout ("First problem for j=",j,":")
                     # printout (f"{j=} {self.bascobas[j]=} {self.whichvar[j]=}")
-                    printout (f"j={j} self.bascobas[j]={self.bascobas[j]} self.whichvar[j]={self.whichvar[j]}")
+                    printout(
+                        f"j={j} self.bascobas[j]={self.bascobas[j]} "
+                        f"self.whichvar[j]={self.whichvar[j]}"
+                    )
                 break
-        return 
-
+        return
+
     def complement(self, v): # Z(i),W(i) are complements
         n = self.n
         if v == 0:
@@ -337,8 +339,8 @@ class tableau:
                     stats.sprint(str(x/10.0))
                 else:
                     stats.sprint("-")
-        printout(stats) 
-
+        printout(stats)
+
     # returns leave,z0leave
     # leave = leaving variable in VARS, given by lexmin row,
     # when enter in VARS is entering variable
@@ -348,7 +350,7 @@ class tableau:
     # so  leave  might not be the index of z0
     def lexminvar(self, enter):
         n = self.n
-        A = self.A 
+        A = self.A
         self.assertcobasic(enter, "Lexminvar")
         col = self.bascobas[enter]-n   # entering tableau column
         leavecand = []  # candidates(=rows) for leaving var
@@ -376,16 +378,13 @@ class tableau:
                 exit(1)
             self.lextested[j] += 1
             self.lexcomparisons[j] += len(leavecand)
-            if j==0:
-                testcol = n+1 # RHS
-            else:
-                testcol = self.bascobas[n+j]-n # tabl col of W(j)
+            testcol = n+1 if j == 0 else self.bascobas[n+j]-n
             if testcol != col: # otherwise nothing changed
-                if testcol >= 0: 
-                    # not a basic testcolumn: perform minimum ratio tests  
+                if testcol >= 0:
+                    # not a basic testcolumn: perform minimum ratio tests
                     newcand = [ leavecand[0] ]
-                    # newcand  contains the new candidates 
-                    for i in range(1,len(leavecand)): 
+                    # newcand  contains the new candidates
+                    for i in range(1,len(leavecand)):
                         # investigate remaining candidates
                         # compare ratios via products
                         tmp1 = A[newcand[0]][testcol] * A[leavecand[i]][col]
@@ -399,8 +398,8 @@ class tableau:
                         # else : unchanged candidates
                     leavecand = newcand
                 else: # testcol < 0: W(j) basic, eliminate its row
-                    # from  leavecand  if in there, since testcol is 
-                    # the  jth  unit column (ratio too big) 
+                    # from  leavecand  if in there, since testcol is
+                    # the  jth  unit column (ratio too big)
                     wj = self.bascobas[j+n]
                     if wj in leavecand:
                         leavecand.remove(wj)
@@ -416,12 +415,12 @@ class tableau:
     # negate tableau column  col
     def negcol(self, col):
         for i in range(self.n):
-            self.A[i][col] = -self.A[i][col] 
-        
-    # negate tableau row.  Used in  pivot() 
+            self.A[i][col] = -self.A[i][col]
+
+    # negate tableau row.  Used in  pivot()
     def negrow(self, row):
         for j in range(self.n+2):
-            self.A[row][j] = -self.A[row][j] 
+            self.A[row][j] = -self.A[row][j]
 
     # leave, enter in  VARS  defining  row, col  of  A
     # pivot tableau on the element  A[row][col] which must be nonzero
@@ -462,8 +461,8 @@ class tableau:
         self.whichvar[col+n] = leave
         self.bascobas[enter] = row
         self.whichvar[row]   = enter
-    ###### end of  pivot (leave, enter) 
-
+    ###### end of  pivot (leave, enter)
+
     def runlemke(self,*,verbose=False,lexstats=False,z0=False,silent=False):
         global filehandle
         # z0: printout value of z0
@@ -476,7 +475,7 @@ class tableau:
         # flags.blexstats  = 0;
 
         if silent:
-            filehandle = open(outfile,'w')
+            filehandle = open(outfile,"w")    # noqa: SIM115
         n = self.n
         self.pivotcount = 1
         # check if d is ok - TBC
@@ -490,7 +489,7 @@ class tableau:
         # negate RHS
         self.negcol(n+1)
         # if (flags.binitabl)
-        if verbose: 
+        if verbose:
             printout("After negcol:")
             printout(self)
 
@@ -498,17 +497,20 @@ class tableau:
             self.testtablvars()
             if z0: # printout progress of z0
                 if self.bascobas[0]<n: # z0 is basic
-                    printout("step,z0=", self.pivotcount, self.A[self.bascobas[0]][n+1]/self.determinant)
+                    printout(
+                        "step,z0=",
+                        self.pivotcount, self.A[self.bascobas[0]][n+1]/self.determinant
+                    )
                 else:
                     printout("step,z0=", self.pivotcount, 0.0)
             # if (flags.bdocupivot)
             self.docupivot (leave, enter)
             self.pivot (leave, enter)
-            if z0leave: 
+            if z0leave:
                 if z0:
                     printout("step,z0=", self.pivotcount+1, 0.0)
                 break
-            if verbose: 
+            if verbose:
                 printout(self)
             enter = self.complement(leave)
             leave, z0leave = self.lexminvar(enter)
@@ -523,7 +525,7 @@ class tableau:
         if (lexstats):
             self.outstatistics()
     #######  end of class tableau
-
+
 
 def main():
     processArguments()

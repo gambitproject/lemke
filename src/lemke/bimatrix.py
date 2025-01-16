@@ -1,23 +1,23 @@
 # bimatrix class
 
-import sys
-import numpy as np
 import fractions
-from . import utils
-from . import columnprint
-from . import lemke
-from . import randomstart
-import random # random.seed
+import random  # random.seed
+import sys
+
+import numpy as np
+
+from . import columnprint, lemke, randomstart, utils
+
 
 # for debugging
-def printglobals(): 
-    globs = [x for x in globals().keys() if not "__" in x]
+def printglobals():
+    globs = [x for x in globals() if "__" not in x]
     for var in globs:
         value = str(globals()[var])
-        if not "<" in value:
+        if "<" not in value:
             print("    "+str(var)+"=", value)
 
-# file format: 
+# file format:
 # <m> <n>
 # m*n entries of A, separated by blanks / newlines
 # m*n entries of B, separated by blanks / newlines
@@ -45,7 +45,7 @@ def processArguments():
     setdecimals = False
     showhelp = False
     for s in arglist:
-        if s[0] == '-': 
+        if s[0] == "-":
             # discard optional argument-parameters
             if (setLH or settrace or setseed):
                 setLH = settrace = setseed = False
@@ -85,7 +85,7 @@ def processArguments():
             elif setaccuracy:
                 setaccuracy= False
                 accuracy = int(s)
-            else: 
+            else:
                 gamefilename = s
     if (showhelp):
         helpstring="""usage: bimatrix.py [options]
@@ -93,7 +93,7 @@ options:
     <filename>      here: """+repr(gamefilename)+ """, must not start with '-'
     -LH [<range>] : Lemke-Howson with missing labels, e.g. '1,3-5,7-' ('' = all)
     -trace [<num>]: tracing procedure, <num> no. of priors, 0 = centroid
-    -seed [<num>] : random seed, default: None 
+    -seed [<num>] : random seed, default: None
     -accuracy <n> : accuracy prior, <n>=denominator, here """+str(accuracy)+"""
     -decimals <d> : allowed payoff digits in input after decimal point, default 4
     -?, -help:      show this help and exit"""
@@ -103,33 +103,33 @@ options:
 
 # list generated from string s such as "1-3,10,4-7", all not
 # larger than endrange (50 is arbitrary default) and at least 1
-def rangesplit(s,endrange=50): 
+def rangesplit(s,endrange=50):
     result = []
-    for part in s.split(','):
+    for part in s.split(","):
         if part != "":
-            if '-' in part:
-                a, b = part.split('-')
-                a = int(a) 
-                b = endrange if b=="" else int(b) 
-            else: 
+            if "-" in part:
+                a, b = part.split("-")
+                a = int(a)
+                b = endrange if b=="" else int(b)
+            else:
                 a = int(part)
                 b = a
             a = max(a,1)
             b = min(b, endrange) # a > endrange means empty range
             result.extend(range(a, b+1))
-    return result 
-
+    return result
+
 # used for both A and B
 class payoffmatrix:
     # create zero matrix of given dimensions
-    def __init__(self, m, n):
-        self.numrows = m
-        self.numcolumns = n
-        self.matrix = np.zeros( (m,n), dtype=fractions.Fraction) 
-        self.negmatrix = np.zeros( (m,n), dtype=fractions.Fraction) 
-        self.max = 0
-        self.min = 0
-        self.negshift = 0
+    # def __init__(self, m, n):
+    #    self.numrows = m
+    #    self.numcolumns = n
+    #    self.matrix = np.zeros( (m,n), dtype=fractions.Fraction)
+    #    self.negmatrix = np.zeros( (m,n), dtype=fractions.Fraction)
+    #    self.max = 0
+    #    self.min = 0
+    #    self.negshift = 0
 
     # create matrix from any numerical matrix
     def __init__(self, A):
@@ -137,11 +137,11 @@ class payoffmatrix:
         m,n = AA.shape
         self.numrows = m
         self.numcolumns = n
-        self.matrix = np.zeros( (m,n), dtype=fractions.Fraction) 
+        self.matrix = np.zeros( (m,n), dtype=fractions.Fraction)
         for i in range(m):
             for j in range(n):
                 self.matrix[i][j] = utils.tofraction(AA[i][j])
-        self.fullmaxmin() 
+        self.fullmaxmin()
 
     def __str__(self):
         buf = columnprint.columnprint(self.numcolumns)
@@ -153,7 +153,7 @@ class payoffmatrix:
         out += ", negshift= " + str(self.negshift)
         return out
 
-    def updatemaxmin(self, fromrow, fromcol): 
+    def updatemaxmin(self, fromrow, fromcol):
         m=self.numrows
         n=self.numcolumns
         for i in range(fromrow, m):
@@ -170,7 +170,7 @@ class payoffmatrix:
         self.updatemaxmin(0,0)
 
     # add full row, row must be of size n
-    def addrow(self, row): 
+    def addrow(self, row):
         self.matrix = np.vstack([self.matrix, row])
         self.numrows += 1
         self.updatemaxmin(self.numrows-1,0)
@@ -180,12 +180,12 @@ class payoffmatrix:
         self.matrix = np.column_stack([self.matrix, col])
         self.numcolumns += 1
         self.updatemaxmin(0,self.numcolumns-1)
-
+
 class bimatrix:
-    # create A,B given m,n 
-    def __init__(self, m, n):
-        self.A = payoffmatrix(m,n)
-        self.B = payoffmatrix(m,n)
+    # create A,B given m,n
+    # def __init__(self, m, n):
+    #    self.A = payoffmatrix(m,n)
+    #    self.B = payoffmatrix(m,n)
 
     # create A,B from file
     def __init__(self, filename):
@@ -194,17 +194,17 @@ class bimatrix:
         words = utils.towords(lines)
         m = int(words[0])
         n = int(words[1])
-        needfracs =  2*m*n 
+        needfracs =  2*m*n
         if len(words) != needfracs + 2:
             print("in bimatrix file "+repr(filename)+":")
             print("m=",m,", n=",n,", need",
                needfracs,"payoffs, got", len(words)-2)
             exit(1)
         k = 2
-        C = utils.tomatrix(m, n, words, k) 
+        C = utils.tomatrix(m, n, words, k)
         self.A = payoffmatrix(C)
         k+= m*n
-        C = utils.tomatrix(m, n, words, k) 
+        C = utils.tomatrix(m, n, words, k)
         self.B = payoffmatrix(C)
 
     def __str__(self):
@@ -238,7 +238,7 @@ class bimatrix:
             lcp.d[i]=1
         return lcp
 
-
+
     def runLH(self, droppedlabel):
         lcp = self.createLCP()
         lcp.d[droppedlabel-1] = 0  # subsidize this label
@@ -246,7 +246,7 @@ class bimatrix:
         # tabl.runlemke(verbose=True, lexstats=True, z0=gz0)
         tabl.runlemke(silent=True)
         return tuple(getequil(tabl))
-        
+
     def LH(self, LHstring):
         if LHstring == "":
             return
@@ -260,7 +260,7 @@ class bimatrix:
                 lhset[eq].append(k)
             else:
                 print ("label",k,"found eq", str_eq(eq,m,n))
-                lhset[eq] = [k] 
+                lhset[eq] = [k]
         print ("-------- equilibria found: --------")
         for eq in lhset:
             print (str_eq(eq,m,n),"found by labels", str(lhset[eq]))
@@ -269,7 +269,7 @@ class bimatrix:
     def runtrace(self, xprior, yprior):
         lcp = self.createLCP()
         Ay = self.A.negmatrix @ yprior
-        xB = xprior @ self.B.negmatrix 
+        xB = xprior @ self.B.negmatrix
         lcp.d = np.hstack((Ay,xB,[1,1]))
         tabl = lemke.tableau(lcp)
         tabl.runlemke(silent=True)
@@ -302,7 +302,7 @@ class bimatrix:
                 else:
                     print ("found eq", str_eq(eq,m,n), "index",
                         self.eqindex(eq,m,n))
-                    trset[eq] = 1 
+                    trset[eq] = 1
         print ("-------- statistics of equilibria found: --------")
         for eq in trset:
             print (trset[eq],"times found ",str_eq(eq,m,n))
@@ -310,8 +310,8 @@ class bimatrix:
 
     def eqindex(self,eq,m,n):
         rowset,colset = supports(eq,m,n)
-        k,l = len(rowset),len(colset)
-        if k!=l:
+        k,ell = len(rowset),len(colset)
+        if k!=ell:
             return 0
         A1 = submatrix(self.A.negmatrix, rowset, colset)
         DA = np.linalg.det(A1)
@@ -322,8 +322,8 @@ class bimatrix:
             return 0
         if DA*DB > 0:
             return sign
-        return -sign 
-        
+        return -sign
+
 def uniform(n):
     return np.array([ fractions.Fraction(1,n) for j in range(n)])
 
@@ -343,10 +343,10 @@ def supports(eq,m,n):
     return rowset,colset
 
 def submatrix(A,rowset,colset):
-    k,l = len(rowset),len(colset)
-    B = np.zeros((k,l))
+    k,ell = len(rowset),len(colset)
+    B = np.zeros((k,ell))
     for i in range (k):
-        for j in range(l):
+        for j in range(ell):
             B[i][j] = A[rowset[i]][colset[j]]
     return B
 
@@ -357,8 +357,8 @@ def main():
 
     G = bimatrix(gamefilename)
     print(G)
-    eqset = G.LH(LHstring)
-    eqset = G.tracing(trace)
+    G.LH(LHstring)
+    G.tracing(trace)
 
 
 if __name__ == "__main__":

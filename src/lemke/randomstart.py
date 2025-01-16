@@ -1,7 +1,9 @@
-import random
 import fractions
-import matplotlib.pyplot as plt
+import random
 import sys
+
+import matplotlib.pyplot as plt
+
 
 # give random n-tuple uniformly from unit simplex
 def randInSimplex(n, naive=False):
@@ -11,7 +13,7 @@ def randInSimplex(n, naive=False):
         for i in range(n):
             x[i] = random.uniform(0, 1)
             sum += x[i]
-        return [k/sum for k in x] 
+        return [k/sum for k in x]
 
     else: # properly uniformly in simplex
         factor = 1.0
@@ -40,12 +42,12 @@ def roundArray(x, accuracy=10000):
     tobeadded = accuracy - sum
     # print(tobeadded)
     assert (tobeadded >=0 and tobeadded<n), "need probabilities"
-    for k in range(tobeadded):
+    for _ in range(tobeadded):
         maxval = max(pastdecimals)
         position = pastdecimals.index(maxval)
         pastdecimals[position] = 0.0
         numerator[position] += 1
-    return [fractions.Fraction(k, accuracy) for k in numerator] 
+    return [fractions.Fraction(k, accuracy) for k in numerator]
 
 # renormalize list x to sum to one
 def renormalize(x):
@@ -53,7 +55,7 @@ def renormalize(x):
     if s == 0:
         return x
     return [k/s for k in x]
-
+
 # map triple of unit triangle to pair in 2D
 # with corners [0,0] [1,0] [0.5,sqrt(3)/2]
 def maptotriangle(vec):
@@ -79,7 +81,9 @@ def main():
             higherdim = a
     if len(arglist)>4:
         naiveplot = True
-    print (f"numpoints={numpoints} accuracy={accuracy} higherdim={higherdim} naiveplot={naiveplot}")
+    print(
+        f"numpoints={numpoints} accuracy={accuracy} higherdim={higherdim} naiveplot={naiveplot}"
+    )
     if higherdim>3:
         segmentstart = (higherdim-2)//2
         print ("show positions", segmentstart,"..",
@@ -90,22 +94,22 @@ def main():
     x1,y1 = maptotriangle([1,0,0])
     x2,y2 = maptotriangle([0,1,0])
     x3,y3 = maptotriangle([0,0,1])
-    plt.plot ([x1,x2,x3,x1], [y1,y2,y3,y1], "black") 
+    plt.plot ([x1,x2,x3,x1], [y1,y2,y3,y1], "black")
 
     roundedpoints = []
-    for i in range(numpoints):
+    for _ in range(numpoints):
         point = randInSimplex(higherdim, naiveplot)
         if higherdim>3:
             segmentstart = (higherdim-2)//2
             point = renormalize (point[segmentstart:segmentstart+3])
-        roundedpoints.append(roundArray(point,accuracy)) 
+        roundedpoints.append(roundArray(point,accuracy))
         x,y = maptotriangle(point)
-        plt.plot([x], [y], 'g.')
+        plt.plot([x], [y], "g.")
     for circ in roundedpoints:
         x,y = maptotriangle(circ)
-        plt.scatter([x], [y], s=10000//accuracy, facecolors='none',
-            edgecolors='r')
-    plt.show() 
+        plt.scatter([x], [y], s=10000//accuracy, facecolors="none",
+            edgecolors="r")
+    plt.show()
 
 
 if __name__ == "__main__":

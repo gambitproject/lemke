@@ -2,13 +2,14 @@
 # tofraction utilities with global decimals
 
 import fractions
+
 import numpy as np
 
 # global constants, mutable
 # https://stackoverflow.com/questions/1977362/how-to-create-module-wide-variables-in-python
 decimals = 4
 deciDenom = 10**decimals
-MAXDECIMALS = 20 
+MAXDECIMALS = 20
 # roundingwarn = False
 
 def setdecimals(n):
@@ -28,13 +29,13 @@ commentchars = "#%*" # lines starting with these are ignored
 # ignore blank lines and lines starting with commentchars
 def stripcomments(filename):
     # http://stackoverflow.com/questions/12330522/reading-a-file-without-newlines
-    newlist = [] 
-    with open(filename,'r') as temp:
+    newlist = []
+    with open(filename) as temp:
         temp = temp.read().splitlines()
         # strip comments
         for line in temp:
             line = line.strip()
-            if line != "" and not line[0] in commentchars:
+            if line != "" and line[0] not in commentchars:
                 newlist.append(line)
     return newlist
 
@@ -42,18 +43,18 @@ def stripcomments(filename):
 def towords(lines):
     words = []
     for line in lines:
-        l = line.split()
-        for w in l:
+        ell = line.split()
+        for w in ell:
             words.append(w)
     return words
-
+
 # convert s to fraction
 # if s contains ".": convert to decimal fraction
 # (numerator deciDenom)
 def tofraction(s):
     if isinstance(s, str) and "." in s:
         s = float(s)
-    if isinstance(s, float): 
+    if isinstance(s, float):
         num = int(abs(s)*deciDenom+0.5) # round .5 away from zero
         if s<0:
             num = -num
