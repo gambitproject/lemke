@@ -1,0 +1,17 @@
+EFG 2 R "General-sum with imperfect info" { "Player 1" "Player 2" }
+"
+Example (Figure 4.1) from
+
+COMPUTING EQUILIBRIA FOR TWO-PERSON GAMES - BERNHARD VON STENGEL
+Chapter 45, Handbook of Game Theory with Economic Applications, Vol. 3 (2002)
+"
+
+p "" 1 1 "Root" { "L" "R" } 0
+p "" 2 1 "Node2" { "l" "r" } 0
+p "" 1 2 "Node3-left" { "S" "T" } 0
+t "" 1 "Outcome S-left" { 0 1 }
+t "" 2 "Outcome T-left" { 2 0 }
+p "" 1 3 "Node3-right" { "S" "T" } 0
+t "" 3 "Outcome S-right" { 6 0 }
+t "" 4 "Outcome T-right" { 5 2 }
+t "" 5 "Outcome R" { 3 4 }
