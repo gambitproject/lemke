@@ -42,7 +42,8 @@ def roundArray(x, accuracy=10000):
         sum += num
     tobeadded = accuracy - sum
     # print(tobeadded)
-    assert (0 <= tobeadded < n), "need probabilities"
+    if not (0 <= tobeadded < n):
+        raise ValueError("need probabilities")
     for _ in range(tobeadded):
         maxval = max(pastdecimals)
         position = pastdecimals.index(maxval)
