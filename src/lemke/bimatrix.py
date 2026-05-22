@@ -15,7 +15,7 @@ def printglobals():
     for var in globs:
         value = str(globals()[var])
         if "<" not in value:
-            print("    "+str(var)+"=", value)
+            print("    " + str(var) + "=", value)
 
 
 # file format:
@@ -90,15 +90,21 @@ def processArguments():
             else:
                 gamefilename = s
     if showhelp:
-        helpstring = """usage: bimatrix.py [options]
+        helpstring = (
+            """usage: bimatrix.py [options]
 options:
-    <filename>      here: """ + repr(gamefilename) + """, must not start with '-'
+    <filename>      here: """
+            + repr(gamefilename)
+            + """, must not start with '-'
     -LH [<range>] : Lemke-Howson with missing labels, e.g. '1,3-5,7-' ('' = all)
     -trace [<num>]: tracing procedure, <num> no. of priors, 0 = centroid
     -seed [<num>] : random seed, default: None
-    -accuracy <n> : accuracy prior, <n>=denominator, here """ + str(accuracy) + """
+    -accuracy <n> : accuracy prior, <n>=denominator, here """
+            + str(accuracy)
+            + """
     -decimals <d> : allowed payoff digits in input after decimal point, default 4
     -?, -help:      show this help and exit"""
+        )
         print(helpstring)
         exit(0)
     return
@@ -202,8 +208,7 @@ class bimatrix:
         needfracs = 2 * m * n
         if len(words) != needfracs + 2:
             print("in bimatrix file " + repr(filename) + ":")
-            print("m=", m, ", n=", n, ", need",
-                  needfracs, "payoffs, got", len(words) - 2)
+            print("m=", m, ", n=", n, ", need", needfracs, "payoffs, got", len(words) - 2)
             exit(1)
         k = 2
         C = utils.tomatrix(m, n, words, k)
@@ -304,8 +309,7 @@ class bimatrix:
                 if eq in trset:
                     trset[eq] += 1
                 else:
-                    print("found eq", str_eq(eq, m, n), "index",
-                          self.eqindex(eq, m, n))
+                    print("found eq", str_eq(eq, m, n), "index", self.eqindex(eq, m, n))
                     trset[eq] = 1
         print("-------- statistics of equilibria found: --------")
         for eq in trset:
@@ -335,12 +339,12 @@ def uniform(n):
 
 def getequil(tabl):
     tabl.createsol()
-    return tabl.solution[1:tabl.n - 1]
+    return tabl.solution[1: tabl.n - 1]
 
 
 def str_eq(eq, m, n):
     x = "(" + ",".join([str(x) for x in eq[0:m]]) + ")"
-    y = "(" + ",".join([str(x) for x in eq[m:m + n]]) + ")"
+    y = "(" + ",".join([str(x) for x in eq[m: m + n]]) + ")"
     rowset, colset = supports(eq, m, n)
     return x + "," + y + "\n    supports: " + str(rowset) + str(colset)
 
