@@ -8,7 +8,7 @@ import numpy as np
 # global constants, mutable
 # https://stackoverflow.com/questions/1977362/how-to-create-module-wide-variables-in-python
 decimals = 4
-deciDenom = 10**decimals
+deciDenom = 10 ** decimals
 MAXDECIMALS = 20
 # roundingwarn = False
 
