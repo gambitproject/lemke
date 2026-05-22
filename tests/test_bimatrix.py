@@ -1,4 +1,15 @@
-"""Tests for Nash equilibrium solvers (Lemke-Howson, tracing) on bimatrix games."""
+"""
+Test Lemke-Howson algorithm and tracing procedure on bimatrix games.
+
+Conditions checked:
+    For games with unique equilibrium:
+    - Output matches precomputed solution.
+
+    For all games:
+    - Maximum regret is zero.
+    - Output is a subset of the equilibria
+      returned by pygambit.nash.enummixed_solve().
+"""
 
 import dataclasses
 import random

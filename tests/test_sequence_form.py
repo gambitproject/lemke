@@ -1,3 +1,11 @@
+"""
+Test Lemke's algorithm on an LCP constructed from
+an extensive-form game using the sequence form.
+
+Condition checked:
+    - Maximum regret is zero.
+"""
+
 import os
 from fractions import Fraction as Fr
 

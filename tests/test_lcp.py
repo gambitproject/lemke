@@ -1,4 +1,14 @@
-"""Tests for Lemke's algorithm on LCPs."""
+"""
+Test Lemke's algorithm on LCPs.
+
+Conditions checked:
+    For success cases (LCPs with at least one solution):
+    - Output matches precomputed or textbook solution.
+    - Output satisfies LCP conditions.
+
+    For failure cases (LCPs with no solutions):
+    - Algorithm calls exit(1), indicating termination on a secondary ray.
+"""
 
 from dataclasses import dataclass
 from fractions import Fraction as Fr
