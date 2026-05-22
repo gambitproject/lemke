@@ -15,7 +15,7 @@ FILES = [
 
 
 @pytest.mark.parametrize("file_path", FILES)
-def test_with_max_regret(file_path, subtests):
+def test_with_max_regret(file_path):
     game = pygambit.read_efg(file_path)
 
     x_probs, y_probs = solve_via_sequence_form(game)
@@ -23,5 +23,4 @@ def test_with_max_regret(file_path, subtests):
     profile = game.mixed_behavior_profile([x_probs, y_probs], rational=True)
     max_r = profile.max_regret()
 
-    with subtests.test("max regret = 0"):
-        assert max_r == Fr(0)
+    assert max_r == Fr(0)

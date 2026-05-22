@@ -183,11 +183,11 @@ SOLVERS = [
 UNIQUE_NE_CASES = UNIQUE_PURE_NE_CASES + UNIQUE_MIXED_NE_CASES
 
 
-@pytest.mark.parametrize("solver", SOLVERS)
 @pytest.mark.parametrize(
     "test_case",
     UNIQUE_NE_CASES + MULTIPLE_FINITE_NE_CASES + INFINITE_NE_CASES,
 )
+@pytest.mark.parametrize("solver", SOLVERS)
 def test_with_max_regret(test_case: GameTestCase, solver, subtests):
     G = test_case.factory()
     eqs = solver(G)

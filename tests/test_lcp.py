@@ -192,7 +192,7 @@ def test_with_lcp_conditions(test_case: LCPTestCase, subtests):
         assert z0 == Fr(0)
 
     for i, val in enumerate(z):
-        with subtests.test(f"z{i} nonnegativity"):
+        with subtests.test(f"z{i + 1} nonnegativity"):
             assert val >= 0
     for i, val in enumerate(w):
         with subtests.test(f"w{i + 1} nonnegativity"):
