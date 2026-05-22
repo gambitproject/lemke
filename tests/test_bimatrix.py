@@ -183,10 +183,13 @@ SOLVERS = [
 UNIQUE_NE_CASES = UNIQUE_PURE_NE_CASES + UNIQUE_MIXED_NE_CASES
 
 
-@pytest.mark.parametrize(
-    "test_case",
-    UNIQUE_NE_CASES + MULTIPLE_FINITE_NE_CASES + INFINITE_NE_CASES,
-)
+CASES = []
+CASES += UNIQUE_NE_CASES
+CASES += MULTIPLE_FINITE_NE_CASES
+CASES += INFINITE_NE_CASES
+
+
+@pytest.mark.parametrize("test_case", CASES)
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_with_max_regret(test_case: GameTestCase, solver, subtests):
     G = test_case.factory()
@@ -231,7 +234,7 @@ def test_with_expected_results(test_case: GameTestCase, solver, subtests):
             )
 
 
-@pytest.mark.parametrize("test_case", UNIQUE_NE_CASES + MULTIPLE_FINITE_NE_CASES)
+@pytest.mark.parametrize("test_case", CASES)
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_with_pygambit_enummixed(test_case: GameTestCase, solver, subtests):
     """Tests both algorithms against pygambit solutions."""
