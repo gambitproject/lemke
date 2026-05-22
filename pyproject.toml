@@ -11,7 +11,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-test = ["pytest", "pygambit"]
+test = ["pytest", "pytest-subtests", "pygambit"]
 
 requires-python = ">=3.9"
 authors = [
