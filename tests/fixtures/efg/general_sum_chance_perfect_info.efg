@@ -1,0 +1,14 @@
+EFG 2 R "General-sum with chance & perfect info" { "Player 1" "Player 2" }
+""
+
+c "" 1 "" { "A" 1/2 "B" 1/2 } 0
+p "" 1 1 "P1_A" { "L" "R" } 0
+p "" 2 1 "P2_A" { "l" "r" } 0
+t "" 1 "A-L-l" { 10, 2 }
+t "" 2 "A-L-r" { 0, 5 }
+t "" 3 "A-R" { 4, 4 }
+p "" 1 2 "P1_B" { "L" "R" } 0
+p "" 2 2 "P2_B" { "l" "r" } 0
+t "" 4 "B-L-l" { -2, 8 }
+t "" 5 "B-L-r" { 6, -1 }
+t "" 6 "B-R" { 1, 1 }

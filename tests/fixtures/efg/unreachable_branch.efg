@@ -1,0 +1,8 @@
+EFG 2 R "Zero probability branch" {"Player 1" "Player 2"}
+""
+
+c "" 1 "" {"L" 0 "R" 1} 0
+t "" 1 "L" {100, 100}
+p "" 1 1 "" {"a" "b"} 0
+t "" 2 "R-a" {2, 1}
+t "" 3 "R-b" {3, 4}

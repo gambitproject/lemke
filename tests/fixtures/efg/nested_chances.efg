@@ -1,0 +1,12 @@
+EFG 2 R "Game with nested chance nodes" {"Player 1" "Player 2"}
+"
+Game where a chance node immediately follows another chance node.
+"
+
+c "" 1 "" {"L" 1/2 "R" 1/2} 0
+c "" 2 "" {"X" 1/2 "Y" 1/2} 0
+t "" 1 "L-X" {4, 0}
+t "" 2 "L-Y" {0, 4}
+p "" 1 1 "" {"a" "b"} 0
+t "" 3 "R-a" {2, 2}
+t "" 4 "R-b" {0, 0}

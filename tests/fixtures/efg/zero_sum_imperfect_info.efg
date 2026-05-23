@@ -1,0 +1,9 @@
+EFG 2 R "Matching pennies (zero-sum with imperfect info)" { "1" "2" }
+
+p "" 1 1 "P1 choice" { "Heads" "Tails" } 0
+p "" 2 1 "P2 Response" { "Heads" "Tails" } 0
+t "" 1 "P1 Wins" { 1, -1 }
+t "" 2 "P2 Wins" { -1, 1 }
+p "" 2 1 "P2 Response" { "Heads" "Tails" } 0
+t "" 3 "P2 Wins" { -1, 1 }
+t "" 4 "P1 Wins" { 1, -1 }
