@@ -4,45 +4,12 @@ import fractions
 import math  # gcd
 import sys
 
+import click
+
 from . import columnprint, utils
 
 # global defaults
-lcpfilename = "lcp"
-outfile = lcpfilename + ".out"
 filehandle = sys.stdout
-verbose = False
-silent = False
-z0 = False
-
-
-# process command-line arguments
-def processArguments():
-    global lcpfilename, outfile, filehandle, verbose, silent, z0
-    helpstring = """usage: lemke.py [options]
-options: -v, -verbose : printout intermediate tableaus
-         -s, -silent  : send output to <lcpfilename>.out
-         -z0 : show value of z0 at each step
-         -?, -help:    show this help
-         <lcpfilename> (default: "lcp", must not start with "-")
-         Example: [python] lemke.py -v 2lcp"""
-    arglist = sys.argv[1:]
-    showhelp = False
-    for s in arglist:
-        if s == "-v" or s == "-verbose":
-            verbose = True
-        elif s == "-s" or s == "-silent":
-            silent = True
-        elif s == "-z0":
-            z0 = True
-        elif s[0] == "-":
-            showhelp = True
-        else:
-            lcpfilename = s
-            outfile = s + ".out"
-    if showhelp:
-        printout(helpstring)
-        exit(0)
-    return
 
 
 def printout(*s):
@@ -468,7 +435,15 @@ class tableau:
 
     # end of  pivot (leave, enter)
 
-    def runlemke(self, *, verbose=False, lexstats=False, z0=False, silent=False):
+    def runlemke(
+        self,
+        *,
+        verbose=False,
+        lexstats=False,
+        z0=False,
+        silent=False,
+        lcpfilename="lcp",
+    ):
         global filehandle
         # z0: printout value of z0
         # flags.maxcount   = 0;
@@ -478,6 +453,8 @@ class tableau:
         # flags.boutsol    = 1;
         # flags.binteract  = 0;
         # flags.blexstats  = 0;
+
+        outfile = lcpfilename + ".out"
 
         if silent:
             filehandle = open(outfile, "w")  # noqa: SIM115
@@ -532,15 +509,46 @@ class tableau:
     #  end of class tableau
 
 
-def main():
-    processArguments()
+@click.command(
+    context_settings={"help_option_names": ["-?", "--help"]},
+)
+@click.option(
+    "-v",
+    "--verbose",
+    is_flag=True,
+    help="Printout intermediate tableaus",
+)
+@click.option(
+    "-s",
+    "--silent",
+    is_flag=True,
+    help="Send output to '[LCPFILENAME].out'",
+)
+@click.option(
+    "--z0",
+    is_flag=True,
+    help="Show value of z0 at each step",
+)
+@click.argument(
+    "lcpfilename",
+    default="lcp",
+    required=False,
+    type=click.Path(exists=True, readable=True),
+)
+def main(verbose, silent, z0, lcpfilename):
+    """
+    Tool for solving linear complementarity problems using Lemke's algorithm.
+
+    [LCPFILENAME] is the path to the input file (default: "lcp")
+    """
+
     printout(f"verbose={verbose} lcpfilename={lcpfilename} silent={silent} z0={z0}")
     # printout (f"{verbose}= {lcpfilename}= {silent}= {z0}=")
     m = lcp(lcpfilename)
     printout(m)
     printout("==================================")
     tabl = tableau(m)
-    tabl.runlemke(verbose=verbose, z0=z0, silent=silent)
+    tabl.runlemke(verbose=verbose, z0=z0, silent=silent, lcpfilename=lcpfilename)
 
 
 if __name__ == "__main__":

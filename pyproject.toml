@@ -7,7 +7,8 @@ name = "lemke"
 version = "0.0.1"
 dependencies = [
     "numpy>=2.2,<2.3",
-    "matplotlib>=3.10,<3.11"
+    "matplotlib>=3.10,<3.11",
+    "click>=8.1",
 ]
 
 [project.optional-dependencies]
