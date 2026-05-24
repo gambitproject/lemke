@@ -510,7 +510,7 @@ class tableau:
 
 
 @click.command(
-    context_settings={"help_option_names": ["-?", "--help"]},
+    context_settings={"help_option_names": ["-?", "-h", "--help"]},
 )
 @click.option(
     "-v",
