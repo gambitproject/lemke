@@ -533,7 +533,7 @@ class tableau:
     "lcpfilename",
     default="lcp",
     required=False,
-    type=click.Path(exists=True, readable=True),
+    type=click.Path(exists=True, readable=True, file_okay=True, dir_okay=False),
 )
 def main(verbose, silent, z0, lcpfilename):
     """
