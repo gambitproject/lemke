@@ -152,7 +152,7 @@ MULTIPLE_FINITE_NE_CASES = [
         id="multiple_finite_battle_of_the_sexes",
     ),
 
-pytest.param(
+    pytest.param(
         GameTestCase(
             factory=lambda: bimatrix(FIXTURES_DIR / "multiple_finite_4x2"),
         ),
