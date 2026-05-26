@@ -10,7 +10,7 @@ dependencies = [
     "matplotlib>=3.10,<3.11"
 ]
 
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 authors = [
     {name = "Bernhard von Stengel", email = "b.von-stengel@lse.ac.uk"}
 ]
