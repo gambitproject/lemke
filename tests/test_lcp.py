@@ -17,7 +17,7 @@ from typing import Callable
 
 import pytest
 
-from src.lemke.lemke import lcp, tableau
+from lemke.lemke import lcp, tableau
 
 FIXTURES_DIR = Path("tests/fixtures/lcp")
 

@@ -20,8 +20,8 @@ from pathlib import Path
 import pygambit
 import pytest
 
-from src.lemke import randomstart
-from src.lemke.bimatrix import bimatrix, uniform
+from lemke import randomstart
+from lemke.bimatrix import bimatrix, uniform
 
 FIXTURES_DIR = Path("tests/fixtures/bimatrix")
 

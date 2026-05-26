@@ -1,7 +1,7 @@
 from collections import defaultdict
 from fractions import Fraction as Fr
 
-from src.lemke.lemke import lcp
+from lemke.lemke import lcp
 from tests.test_lcp import lemke_solver
 
 EMPTY: tuple[()] = ()  # empty sequence
