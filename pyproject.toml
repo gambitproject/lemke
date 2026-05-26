@@ -10,9 +10,6 @@ dependencies = [
     "matplotlib>=3.10,<3.11"
 ]
 
-[project.optional-dependencies]
-test = ["pytest", "pytest-subtests", "pygambit"]
-
 requires-python = ">=3.9"
 authors = [
     {name = "Bernhard von Stengel", email = "b.von-stengel@lse.ac.uk"}
@@ -31,6 +28,13 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: Implementation :: CPython",
     "Topic :: Scientific/Engineering :: Mathematics"
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest",
+    "pytest-subtests",
+    "pygambit",
 ]
 
 [project.urls]
