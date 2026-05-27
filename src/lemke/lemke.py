@@ -442,7 +442,7 @@ class tableau:
         lexstats=False,
         z0=False,
         silent=False,
-        lcpfilename="lcp",
+        lcpfilename,
     ):
         global filehandle
         # z0: printout value of z0
@@ -531,15 +531,13 @@ class tableau:
 )
 @click.argument(
     "lcpfilename",
-    default="lcp",
-    required=False,
     type=click.Path(exists=True, readable=True, file_okay=True, dir_okay=False),
 )
 def main(verbose, silent, z0, lcpfilename):
     """
     Tool for solving linear complementarity problems using Lemke's algorithm.
 
-    [LCPFILENAME] is the path to the input file (default: "lcp")
+    [LCPFILENAME] is the path to the input file
     """
 
     printout(f"verbose={verbose} lcpfilename={lcpfilename} silent={silent} z0={z0}")
