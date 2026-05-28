@@ -26,7 +26,7 @@ def lemke_solver(lcp_instance: lcp) -> list[Fr]:
     """Runs Lemke's algorithm on the given LCP and returns the solution."""
 
     tabl = tableau(lcp_instance)
-    tabl.runlemke(verbose=False, z0=False, silent=False)
+    tabl.runlemke()
     return tabl.solution
 
 
@@ -242,7 +242,7 @@ FAILURE_CASES = [
 @pytest.mark.parametrize("test_case", FAILURE_CASES)
 def test_failure(test_case: LCPTestCase):
     """
-    Test the Lemke solver on LCPs that terminate on a secondary ray 
+    Test the Lemke solver on LCPs that terminate on a secondary ray
     by verifying that it raises SystemExit with code 1.
     """
     lcp_instance = test_case.factory()
