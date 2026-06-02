@@ -20,8 +20,8 @@ from pathlib import Path
 import pygambit
 import pytest
 
-from src.lemke import randomstart
-from src.lemke.bimatrix import bimatrix, uniform
+from lemke import randomstart
+from lemke.bimatrix import bimatrix, uniform
 
 FIXTURES_DIR = Path("tests/fixtures/bimatrix")
 
@@ -152,7 +152,7 @@ MULTIPLE_FINITE_NE_CASES = [
         id="multiple_finite_battle_of_the_sexes",
     ),
 
-pytest.param(
+    pytest.param(
         GameTestCase(
             factory=lambda: bimatrix(FIXTURES_DIR / "multiple_finite_4x2"),
         ),

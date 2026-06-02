@@ -17,7 +17,7 @@ z0 = False
 
 # process command-line arguments
 def processArguments():
-    global lcpfilename, outfile, filehandle, verbose, silent, z0
+    global lcpfilename, outfile, verbose, silent, z0
     helpstring = """usage: lemke.py [options]
 options: -v, -verbose : printout intermediate tableaus
          -s, -silent  : send output to <lcpfilename>.out
