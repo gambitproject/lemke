@@ -4,6 +4,8 @@ import random
 import click
 import matplotlib.pyplot as plt
 
+MAX_ACCURACY = 10_000_000
+
 
 # give random n-tuple uniformly from unit simplex
 def randInSimplex(n, naive=False):
@@ -31,6 +33,9 @@ def randInSimplex(n, naive=False):
 # round an array <x> of probabilities to fractions with
 # denominator <accuracy>
 def roundArray(x, accuracy=10000):
+    if not 1 <= accuracy <= MAX_ACCURACY:
+        raise ValueError(f"accuracy must be between 1 and {MAX_ACCURACY}")
+
     n = len(x)
     sum = 0
     numerator = [0] * n
@@ -82,6 +87,7 @@ def maptotriangle(vec):
     default=20,
     show_default=True,
     help="Denominator N: each coordinate is rounded to the nearest multiple of 1/N",
+    type=click.IntRange(1, MAX_ACCURACY),
 )
 @click.option(
     "--higherdim",
