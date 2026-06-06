@@ -86,15 +86,17 @@ def maptotriangle(vec):
     "--accuracy",
     default=20,
     show_default=True,
-    help="Denominator N: each coordinate is rounded to the nearest multiple of 1/N",
+    help="Denominator x: each coordinate is rounded to the nearest multiple of 1/x",
     type=click.IntRange(1, MAX_ACCURACY),
+    metavar="INTEGER",
 )
 @click.option(
     "--higherdim",
     default=3,
     show_default=True,
-    help="Number of components in the probability vector being sampled",
+    help="Dimension from which the middle 3 components will be sampled",
     type=click.IntRange(3, 10),
+    metavar="INTEGER",
 )
 @click.option(
     "--naiveplot",
