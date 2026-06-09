@@ -468,68 +468,74 @@ class tableau:
 
     # end of  pivot (leave, enter)
 
-    def runlemke(self, *, verbose=False, lexstats=False, z0=False, silent=False):
-        global filehandle
-        # z0: printout value of z0
-        # flags.maxcount   = 0;
-        # flags.bdocupivot = 1;
-        # flags.binitabl   = 1;
-        # flags.bouttabl   = 0;  (= verbose)
-        # flags.boutsol    = 1;
-        # flags.binteract  = 0;
-        # flags.blexstats  = 0;
-
-        if silent:
-            filehandle = open(outfile, "w")  # noqa: SIM115
-        n = self.n
-        self.pivotcount = 1
-        # check if d is ok - TBC
-        # if (flags.binitabl)
-        printout("After filltableau:")
-        printout(self)
-
-        # z0 enters the basis to obtain lex-feasible solution
-        enter = 0
-        leave, z0leave = self.lexminvar(enter)
-        # negate RHS
-        self.negcol(n + 1)
-        # if (flags.binitabl)
-        if verbose:
-            printout("After negcol:")
-            printout(self)
-
-        while True:  # main loop of complementary pivoting
-            self.testtablvars()
-            if z0:  # printout progress of z0
-                if self.bascobas[0] < n:  # z0 is basic
-                    printout(
-                        "step,z0=",
-                        self.pivotcount, self.A[self.bascobas[0]][n + 1] / self.determinant
-                    )
-                else:
-                    printout("step,z0=", self.pivotcount, 0.0)
-            # if (flags.bdocupivot)
-            self.docupivot(leave, enter)
-            self.pivot(leave, enter)
-            if z0leave:
-                if z0:
-                    printout("step,z0=", self.pivotcount + 1, 0.0)
-                break
-            if verbose:
-                printout(self)
-            enter = self.complement(leave)
-            leave, z0leave = self.lexminvar(enter)
-            self.pivotcount += 1
-
-        # if (flags.binitabl)
-        printout("Final tableau:")
-        printout(self)
-        # if (flags.boutsol)
-        self.createsol()
-        printout(self.outsol())
-        if lexstats:
-            self.outstatistics()
     #  end of class tableau
+
+
+def runlemke(*, lcp, verbose=False, lexstats=False, z0=False, silent=False):
+    global filehandle
+    # z0: printout value of z0
+    # flags.maxcount   = 0;
+    # flags.bdocupivot = 1;
+    # flags.binitabl   = 1;
+    # flags.bouttabl   = 0;  (= verbose)
+    # flags.boutsol    = 1;
+    # flags.binteract  = 0;
+    # flags.blexstats  = 0;
+
+    tabl = tableau(lcp)
+
+    if silent:
+        filehandle = open(outfile, "w")  # noqa: SIM115
+    n = tabl.n
+    tabl.pivotcount = 1
+    # check if d is ok - TBC
+    # if (flags.binitabl)
+    printout("After filltableau:")
+    printout(tabl)
+
+    # z0 enters the basis to obtain lex-feasible solution
+    enter = 0
+    leave, z0leave = tabl.lexminvar(enter)
+    # negate RHS
+    tabl.negcol(n + 1)
+    # if (flags.binitabl)
+    if verbose:
+        printout("After negcol:")
+        printout(tabl)
+
+    while True:  # main loop of complementary pivoting
+        tabl.testtablvars()
+        if z0:  # printout progress of z0
+            if tabl.bascobas[0] < n:  # z0 is basic
+                printout(
+                    "step,z0=",
+                    tabl.pivotcount, tabl.A[tabl.bascobas[0]][n + 1] / tabl.determinant
+                )
+            else:
+                printout("step,z0=", tabl.pivotcount, 0.0)
+        # if (flags.bdocupivot)
+        tabl.docupivot(leave, enter)
+        tabl.pivot(leave, enter)
+        if z0leave:
+            if z0:
+                printout("step,z0=", tabl.pivotcount + 1, 0.0)
+            break
+        if verbose:
+            printout(tabl)
+        enter = tabl.complement(leave)
+        leave, z0leave = tabl.lexminvar(enter)
+        tabl.pivotcount += 1
+
+    # if (flags.binitabl)
+    printout("Final tableau:")
+    printout(tabl)
+    # if (flags.boutsol)
+    tabl.createsol()
+    printout(tabl.outsol())
+    if lexstats:
+        tabl.outstatistics()
+
+    return tabl.solution
 
 
 def main():
@@ -539,8 +545,7 @@ def main():
     m = lcp(lcpfilename)
     printout(m)
     printout("==================================")
-    tabl = tableau(m)
-    tabl.runlemke(verbose=verbose, z0=z0, silent=silent)
+    runlemke(lcp=m, verbose=verbose, z0=z0, silent=silent)
 
 
 if __name__ == "__main__":

@@ -251,10 +251,9 @@ class bimatrix:
     def runLH(self, droppedlabel):
         lcp = self.createLCP()
         lcp.d[droppedlabel - 1] = 0  # subsidize this label
-        tabl = lemke.tableau(lcp)
         # tabl.runlemke(verbose=True, lexstats=True, z0=gz0)
-        tabl.runlemke(silent=True)
-        return tuple(getequil(tabl))
+        equilibrium = lemke.runlemke(lcp=lcp, silent=True)[1: lcp.n - 1]
+        return tuple(equilibrium)
 
     def LH(self, LHstring):
         if LHstring == "":
@@ -280,9 +279,8 @@ class bimatrix:
         Ay = self.A.negmatrix @ yprior
         xB = xprior @ self.B.negmatrix
         lcp.d = np.hstack((Ay, xB, [1, 1]))
-        tabl = lemke.tableau(lcp)
-        tabl.runlemke(silent=True)
-        return tuple(getequil(tabl))
+        equilibrium = lemke.runlemke(lcp=lcp, silent=True)[1: lcp.n - 1]
+        return tuple(equilibrium)
 
     def tracing(self, trace):
         if trace < 0:
@@ -335,11 +333,6 @@ class bimatrix:
 
 def uniform(n):
     return np.array([fractions.Fraction(1, n) for _ in range(n)])
-
-
-def getequil(tabl):
-    tabl.createsol()
-    return tabl.solution[1: tabl.n - 1]
 
 
 def str_eq(eq, m, n):
