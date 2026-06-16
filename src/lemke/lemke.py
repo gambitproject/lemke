@@ -9,7 +9,6 @@ from . import columnprint, utils
 # global defaults
 lcpfilename = "lcp"
 outfile = lcpfilename + ".out"
-filehandle = sys.stdout
 verbose = False
 silent = False
 z0 = False
@@ -43,10 +42,6 @@ options: -v, -verbose : printout intermediate tableaus
         print(helpstring)
         exit(0)
     return
-
-
-def printout(*s):
-    print(*s, file=filehandle)
 
 
 # LCP data M,q,d
@@ -416,10 +411,6 @@ class RayTermination(Exception):
         )
 
 
-def docupivot(leave, enter):  # leave, enter in VARS
-    return f"leaving: {leave.ljust(5)} entering: {enter}"
-
-
 def outsol(tableau):  # string giving solution, after createsol()
     # printout in columns to check complementarity
     n = tableau.n
@@ -468,8 +459,16 @@ def outstatistics(tableau):
     return stats
 
 
-def runlemke(*, lcp, verbose=False, lexstats=False, z0=False, silent=False):
-    global filehandle
+class LemkeCallback:
+    def on_start(self, lcp, tableau): pass
+    def on_negcol(self, tableau): pass
+    def on_pivot_start(self, tableau, leave, enter): pass
+    def on_pivot_end(self, tableau): pass
+    def on_done(self, tableau): pass
+    def on_ray_termination(self, tableau, message): pass
+
+
+class PrintingCallback(LemkeCallback):
     # z0: printout value of z0
     # flags.maxcount   = 0;
     # flags.bdocupivot = 1;
@@ -479,72 +478,117 @@ def runlemke(*, lcp, verbose=False, lexstats=False, z0=False, silent=False):
     # flags.binteract  = 0;
     # flags.blexstats  = 0;
 
+    def __init__(
+        self,
+        stream=sys.stdout,
+        verbose=False,
+        z0=False,
+        lexstats=False,
+    ):
+        self.stream = stream
+        self.verbose = verbose
+        self.z0 = z0
+        self.lexstats = lexstats
+
+    def printout(self, *args):
+        print(*args, file=self.stream)
+
+    def on_start(self, lcp, tableau):
+        self.printout(f"verbose={verbose} lcpfilename={lcpfilename} silent={silent} z0={z0}")
+        self.printout(lcp)
+        self.printout("==================================")
+
+        # if (flags.binitabl)
+        self.printout("After filltableau:")
+        self.printout(tableau)
+
+    def on_negcol(self, tableau):
+        # if (flags.binitabl)
+        if self.verbose:
+            self.printout("After negcol:")
+            self.printout(tableau)
+
+    def on_pivot_start(self, tableau, leave, enter):
+        if self.z0:  # printout progress of z0
+            z0_value = 0.0
+            if tableau.bascobas[0] < tableau.n:  # z0 is basic
+                z0_value = tableau.A[tableau.bascobas[0]][tableau.n + 1] / tableau.determinant
+            self.printout(f"pivot count = {tableau.pivotcount}, z0 = {z0_value}")
+
+        # if (flags.bdocupivot)
+        self.printout(f"leaving: {leave.ljust(5)} entering: {enter}")
+
+    def on_pivot_end(self, tableau):
+        if self.verbose:
+            self.printout(tableau)
+
+    def on_done(self, tableau):
+        if self.z0:
+            self.printout(f"pivot count = {tableau.pivotcount + 1}, z0 = 0.0")
+
+        # if (flags.binitabl)
+        self.printout("Final tableau:")
+        self.printout(tableau)
+
+        # if (flags.boutsol)
+        self.printout(outsol(tableau))
+
+        if self.lexstats:
+            # output statistics of minimum ratio test
+            self.printout(outstatistics(tableau))
+
+    def on_ray_termination(self, tableau, message):
+        self.printout(message)
+        self.printout(tableau)
+        self.printout("Current basis not an LCP solution:")
+        self.printout(outsol(tableau))
+
+
+def runlemke(*, lcp, callback=None):
+    callback = callback or LemkeCallback()
+
     try:
         tabl = tableau(lcp)
 
-        printout(f"verbose={verbose} lcpfilename={lcpfilename} silent={silent} z0={z0}")
-        printout(lcp)
-        printout("==================================")
-
-        if silent:
-            filehandle = open(outfile, "w")  # noqa: SIM115
         n = tabl.n
         tabl.pivotcount = 1
         # check if d is ok - TBC
         # if (flags.binitabl)
-        printout("After filltableau:")
-        printout(tabl)
+        callback.on_start(lcp=lcp, tableau=tabl)
 
         # z0 enters the basis to obtain lex-feasible solution
         enter = 0
         leave, z0leave = tabl.lexminvar(enter)
         # negate RHS
         tabl.negcol(n + 1)
-        # if (flags.binitabl)
-        if verbose:
-            printout("After negcol:")
-            printout(tabl)
+        callback.on_negcol(tableau=tabl)
 
         while True:  # main loop of complementary pivoting
             tabl.testtablvars()
-            if z0:  # printout progress of z0
-                if tabl.bascobas[0] < n:  # z0 is basic
-                    printout(
-                        "step,z0=",
-                        tabl.pivotcount, tabl.A[tabl.bascobas[0]][n + 1] / tabl.determinant
-                    )
-                else:
-                    printout("step,z0=", tabl.pivotcount, 0.0)
-            # if (flags.bdocupivot)
             tabl.assertbasic(leave, "docupivot")
             tabl.assertcobasic(enter, "docupivot")
-            printout(docupivot(tabl.vartoa(leave), tabl.vartoa(enter)))
+
+            callback.on_pivot_start(
+                tableau=tabl,
+                leave=tabl.vartoa(leave),
+                enter=tabl.vartoa(enter),
+            )
             tabl.pivot(leave, enter)
             if z0leave:
-                if z0:
-                    printout("step,z0=", tabl.pivotcount + 1, 0.0)
                 break
-            if verbose:
-                printout(tabl)
+
+            callback.on_pivot_end(tableau=tabl)
+
             enter = tabl.complement(leave)
             leave, z0leave = tabl.lexminvar(enter)
             tabl.pivotcount += 1
 
-        # if (flags.binitabl)
-        printout("Final tableau:")
-        printout(tabl)
-        # if (flags.boutsol)
         tabl.createsol()
-        printout(outsol(tabl))
-        if lexstats:
-            printout(outstatistics(tabl))
+        callback.on_done(tableau=tabl)
 
         return tabl.solution
     except RayTermination as e:
-        printout(str(e))
-        printout(e.tableau)
-        printout("Current basis not an LCP solution:")
-        printout(outsol(e.tableau))
+        callback.on_ray_termination(message=str(e), tableau=e.tableau)
         return None
 
 
@@ -553,7 +597,17 @@ def main():
 
     m = lcp(lcpfilename)
 
-    runlemke(lcp=m, verbose=verbose, z0=z0, silent=silent)
+    if silent:
+        with open(outfile, "w") as f:
+            runlemke(
+                lcp=m,
+                callback=PrintingCallback(stream=f, verbose=verbose, z0=z0),
+            )
+    else:
+        runlemke(
+            lcp=m,
+            callback=PrintingCallback(stream=sys.stdout, verbose=verbose, z0=z0),
+        )
 
 
 if __name__ == "__main__":
