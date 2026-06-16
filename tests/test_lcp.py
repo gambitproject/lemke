@@ -239,7 +239,4 @@ def test_failure(test_case: LCPTestCase):
     """
     lcp_instance = test_case.factory()
 
-    with pytest.raises(SystemExit) as exc_info:
-        runlemke(lcp=lcp_instance)
-
-    assert exc_info.value.code == 1
+    assert runlemke(lcp=lcp_instance) is None

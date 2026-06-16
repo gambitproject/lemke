@@ -40,7 +40,7 @@ options: -v, -verbose : printout intermediate tableaus
             lcpfilename = s
             outfile = s + ".out"
     if showhelp:
-        printout(helpstring)
+        print(helpstring)
         exit(0)
     return
 
@@ -70,10 +70,10 @@ class lcp:
             # flatten into words
             words = utils.towords(lines)
             if words[0] != "n=":
-                printout("lcp file", repr(filename),
-                         "must start with 'n=' lcpdim, e.g. 'n= 5', not",
-                         repr(words[0]))
-                exit(1)
+                raise ValueError(
+                    f"lcp file {filename!r} must start with 'n=' lcpdim, e.g. 'n= 5', "
+                    f"not {words[0]!r}"
+                )
             n = int(words[1])
             self.n = n
             # self.M = np.zeros( (n,n), dtype=fractions.Fraction)
@@ -87,10 +87,11 @@ class lcp:
             needfracs = n * n + 2 * n
             if len(words) != needfracs + 5:
                 # printout("in lcp file '",filename,"':")
-                printout("in lcp file " + repr(filename) + ":")
-                printout("n=", n, ", need keywords 'M=' 'q=' 'd=' and n*n + n + n =",
-                         needfracs, "fractions, got", len(words) - 5)
-                exit(1)
+                raise ValueError(
+                    f"in lcp file {filename!r}: "
+                    f"n={n}, need keywords 'M=' 'q=' 'd=' and "
+                    f"n*n + n + n = {needfracs} fractions, got {len(words) - 5}"
+                )
             k = 2  # index in words
             while k < len(words):
                 if words[k] == "M=":
@@ -106,9 +107,10 @@ class lcp:
                     self.d = utils.tovector(n, words, k)
                     k += n
                 else:
-                    printout("in lcp file " + repr(filename) + ":")
-                    printout("expected one of 'M=' 'q=' 'd=', got", repr(words[k]))
-                    exit(1)
+                    raise ValueError(
+                        f"in lcp file {filename!r}: expected one of 'M=' 'q=' 'd=', "
+                        f"got {words[k]!r}"
+                    )
             return
 
     def __str__(self):
@@ -266,54 +268,42 @@ class tableau:
 
     def assertbasic(self, v, info):  # assert that v is basic
         if self.bascobas[v] >= self.n:
-            printout(info, "Cobasic variable", self.vartoa(v),
-                     "should be basic")
-            exit(1)
-        return
+            raise RuntimeError(
+                f"({info}) Cobasic variable {self.vartoa(v)} should be basic"
+            )
 
     def assertcobasic(self, v, info):  # assert that v is cobasic
         if self.bascobas[v] < self.n:
-            printout(info, "Cobasic variable", self.vartoa(v),
-                     "should be cobasic")
-            exit(1)
-        return
+            raise RuntimeError(
+                f"({info}) Basic variable {self.vartoa(v)} should be cobasic"
+            )
 
     def docupivot(self, leave, enter):  # leave, enter in VARS
         self.assertbasic(leave, "docupivot")
         self.assertcobasic(enter, "docupivot")
         s = "leaving: " + self.vartoa(leave).ljust(5)
         s += "entering: " + self.vartoa(enter)
-        printout(s)
-        return
+        return s
 
-    def raytermination(self, enter):
-        printout("Ray termination when trying to enter", self.vartoa(enter))
-        printout(self)
-        printout("Current basis not an LCP solution:")
-        self.createsol()
-        printout(self.outsol())
-        exit(1)
-
-    def testtablvars(self):  # msg only if error, continue
+    def testtablvars(self):
         n = self.n
         for i in range(2 * n + 1):
             if self.bascobas[self.whichvar[i]] != i:
+                message = ""
                 # injective suffices
                 for j in range(2 * n + 1):
                     if j == i:
-                        printout("First problem for j=", j, ":")
-                    # printout (f"{j=} {self.bascobas[j]=} {self.whichvar[j]=}")
-                    printout(
+                        message += f"First problem for j={j}:\n"
+                    message += (
                         f"j={j} self.bascobas[j]={self.bascobas[j]} "
-                        f"self.whichvar[j]={self.whichvar[j]}"
+                        f"self.whichvar[j]={self.whichvar[j]}\n"
                     )
-                break
+                raise RuntimeError(f"testtablvars() failed:\n{message}")
 
     def complement(self, v):  # Z(i),W(i) are complements
         n = self.n
         if v == 0:
-            printout("Attempt to find complement of z0")
-            exit(1)
+            raise RuntimeError("Attempt to find complement of z0")
         if v > n:
             return v - n
         else:
@@ -342,7 +332,7 @@ class tableau:
                     stats.sprint(str(x / 10.0))
                 else:
                     stats.sprint("-")
-        printout(stats)
+        return stats
 
     # returns leave,z0leave
     # leave = leaving variable in VARS, given by lexmin row,
@@ -361,7 +351,7 @@ class tableau:
             if A[i][col] > 0:
                 leavecand.append(i)
         if not leavecand:
-            self.raytermination(enter)
+            raise RayTermination(enter, self)
         if len(leavecand) == 1:  # single positive entering value
             z0leave = self.bascobas[0] == leavecand[0]
         # omitted from statistics: only one possible row
@@ -377,8 +367,7 @@ class tableau:
         j = 0  # going through j = 0..n
         while len(leavecand) > 1:
             if j > n:  # impossible, perturbed RHS should have full rank
-                printout("lex-minratio test failed")
-                exit(1)
+                raise RuntimeError("lex-minratio test failed")
             self.lextested[j] += 1
             self.lexcomparisons[j] += len(leavecand)
             testcol = n + 1 if j == 0 else self.bascobas[n + j] - n
@@ -471,6 +460,15 @@ class tableau:
     #  end of class tableau
 
 
+class RayTermination(Exception):
+    def __init__(self, enter, tableau):
+        tableau.createsol()
+        self.tableau = tableau
+        super().__init__(
+            "Ray termination when trying to enter " + tableau.vartoa(enter)
+        )
+
+
 def runlemke(*, lcp, verbose=False, lexstats=False, z0=False, silent=False):
     global filehandle
     # z0: printout value of z0
@@ -482,69 +480,78 @@ def runlemke(*, lcp, verbose=False, lexstats=False, z0=False, silent=False):
     # flags.binteract  = 0;
     # flags.blexstats  = 0;
 
-    tabl = tableau(lcp)
+    try:
+        tabl = tableau(lcp)
 
-    if silent:
-        filehandle = open(outfile, "w")  # noqa: SIM115
-    n = tabl.n
-    tabl.pivotcount = 1
-    # check if d is ok - TBC
-    # if (flags.binitabl)
-    printout("After filltableau:")
-    printout(tabl)
+        printout(f"verbose={verbose} lcpfilename={lcpfilename} silent={silent} z0={z0}")
+        printout(lcp)
+        printout("==================================")
 
-    # z0 enters the basis to obtain lex-feasible solution
-    enter = 0
-    leave, z0leave = tabl.lexminvar(enter)
-    # negate RHS
-    tabl.negcol(n + 1)
-    # if (flags.binitabl)
-    if verbose:
-        printout("After negcol:")
+        if silent:
+            filehandle = open(outfile, "w")  # noqa: SIM115
+        n = tabl.n
+        tabl.pivotcount = 1
+        # check if d is ok - TBC
+        # if (flags.binitabl)
+        printout("After filltableau:")
         printout(tabl)
 
-    while True:  # main loop of complementary pivoting
-        tabl.testtablvars()
-        if z0:  # printout progress of z0
-            if tabl.bascobas[0] < n:  # z0 is basic
-                printout(
-                    "step,z0=",
-                    tabl.pivotcount, tabl.A[tabl.bascobas[0]][n + 1] / tabl.determinant
-                )
-            else:
-                printout("step,z0=", tabl.pivotcount, 0.0)
-        # if (flags.bdocupivot)
-        tabl.docupivot(leave, enter)
-        tabl.pivot(leave, enter)
-        if z0leave:
-            if z0:
-                printout("step,z0=", tabl.pivotcount + 1, 0.0)
-            break
-        if verbose:
-            printout(tabl)
-        enter = tabl.complement(leave)
+        # z0 enters the basis to obtain lex-feasible solution
+        enter = 0
         leave, z0leave = tabl.lexminvar(enter)
-        tabl.pivotcount += 1
+        # negate RHS
+        tabl.negcol(n + 1)
+        # if (flags.binitabl)
+        if verbose:
+            printout("After negcol:")
+            printout(tabl)
 
-    # if (flags.binitabl)
-    printout("Final tableau:")
-    printout(tabl)
-    # if (flags.boutsol)
-    tabl.createsol()
-    printout(tabl.outsol())
-    if lexstats:
-        tabl.outstatistics()
+        while True:  # main loop of complementary pivoting
+            tabl.testtablvars()
+            if z0:  # printout progress of z0
+                if tabl.bascobas[0] < n:  # z0 is basic
+                    printout(
+                        "step,z0=",
+                        tabl.pivotcount, tabl.A[tabl.bascobas[0]][n + 1] / tabl.determinant
+                    )
+                else:
+                    printout("step,z0=", tabl.pivotcount, 0.0)
+            # if (flags.bdocupivot)
+            printout(tabl.docupivot(leave, enter))
+            tabl.pivot(leave, enter)
+            if z0leave:
+                if z0:
+                    printout("step,z0=", tabl.pivotcount + 1, 0.0)
+                break
+            if verbose:
+                printout(tabl)
+            enter = tabl.complement(leave)
+            leave, z0leave = tabl.lexminvar(enter)
+            tabl.pivotcount += 1
 
-    return tabl.solution
+        # if (flags.binitabl)
+        printout("Final tableau:")
+        printout(tabl)
+        # if (flags.boutsol)
+        tabl.createsol()
+        printout(tabl.outsol())
+        if lexstats:
+            printout(tabl.outstatistics())
+
+        return tabl.solution
+    except RayTermination as e:
+        printout(str(e))
+        printout(e.tableau)
+        printout("Current basis not an LCP solution:")
+        printout(e.tableau.outsol())
+        return None
 
 
 def main():
     processArguments()
-    printout(f"verbose={verbose} lcpfilename={lcpfilename} silent={silent} z0={z0}")
-    # printout (f"{verbose}= {lcpfilename}= {silent}= {z0}=")
+
     m = lcp(lcpfilename)
-    printout(m)
-    printout("==================================")
+
     runlemke(lcp=m, verbose=verbose, z0=z0, silent=silent)
 
 
