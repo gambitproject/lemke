@@ -245,27 +245,6 @@ class tableau:
             else:  # i is nonbasic
                 self.solution[i] = fractions.Fraction(0)
 
-    def outsol(self):  # string giving solution, after createsol()
-        # printout in columns to check complementarity
-        n = self.n
-        sol = columnprint.columnprint(n + 2)
-        sol.sprint("basis=")
-        for i in range(n + 1):
-            if self.bascobas[i] < n:  # Z(i) is a basic variable
-                s = self.vartoa(i)
-            elif i > 0 and self.bascobas[n + i] < n:  # W(i) is a basic variable
-                s = self.vartoa(n + i)
-            else:
-                s = "  "
-            sol.sprint(s)
-        sol.sprint("z=")
-        for i in range(2 * n + 1):
-            sol.sprint(str(self.solution[i]))
-            if i == n:  # new line since printouting slack vars  w  next
-                sol.sprint("w=")
-                sol.sprint("")  # no W(0)
-        return str(sol)
-
     def assertbasic(self, v, info):  # assert that v is basic
         if self.bascobas[v] >= self.n:
             raise RuntimeError(
@@ -277,13 +256,6 @@ class tableau:
             raise RuntimeError(
                 f"({info}) Basic variable {self.vartoa(v)} should be cobasic"
             )
-
-    def docupivot(self, leave, enter):  # leave, enter in VARS
-        self.assertbasic(leave, "docupivot")
-        self.assertcobasic(enter, "docupivot")
-        s = "leaving: " + self.vartoa(leave).ljust(5)
-        s += "entering: " + self.vartoa(enter)
-        return s
 
     def testtablvars(self):
         n = self.n
@@ -308,31 +280,6 @@ class tableau:
             return v - n
         else:
             return v + n
-
-    # output statistics of minimum ratio test
-    def outstatistics(self):
-        n = self.n
-        lext = self.lextested
-        stats = columnprint.columnprint(n + 2)
-        stats.makeLeft(0)
-        stats.sprint("lex-column")
-        for i in range(n + 1):
-            stats.iprint(i)
-        stats.sprint("times tested")
-        for i in range(n + 1):
-            stats.iprint(lext[i])
-        if lext[0] > 0:  # otherwise never a degeneracy
-            stats.sprint("% of pivots")
-            for i in range(0, n + 1):
-                stats.iprint(round(lext[i] * 100 / self.pivotcount))
-            stats.sprint("avg comparisons")
-            for i in range(n + 1):
-                if lext[i] > 0:
-                    x = round(self.lexcomparisons[i] * 10 / lext[0])
-                    stats.sprint(str(x / 10.0))
-                else:
-                    stats.sprint("-")
-        return stats
 
     # returns leave,z0leave
     # leave = leaving variable in VARS, given by lexmin row,
@@ -469,6 +416,58 @@ class RayTermination(Exception):
         )
 
 
+def docupivot(leave, enter):  # leave, enter in VARS
+    return f"leaving: {leave.ljust(5)} entering: {enter}"
+
+
+def outsol(tableau):  # string giving solution, after createsol()
+    # printout in columns to check complementarity
+    n = tableau.n
+    sol = columnprint.columnprint(n + 2)
+    sol.sprint("basis=")
+    for i in range(n + 1):
+        if tableau.bascobas[i] < n:  # Z(i) is a basic variable
+            s = tableau.vartoa(i)
+        elif i > 0 and tableau.bascobas[n + i] < n:  # W(i) is a basic variable
+            s = tableau.vartoa(n + i)
+        else:
+            s = "  "
+        sol.sprint(s)
+    sol.sprint("z=")
+    for i in range(2 * n + 1):
+        sol.sprint(str(tableau.solution[i]))
+        if i == n:  # new line since printouting slack vars  w  next
+            sol.sprint("w=")
+            sol.sprint("")  # no W(0)
+    return str(sol)
+
+
+# output statistics of minimum ratio test
+def outstatistics(tableau):
+    n = tableau.n
+    lext = tableau.lextested
+    stats = columnprint.columnprint(n + 2)
+    stats.makeLeft(0)
+    stats.sprint("lex-column")
+    for i in range(n + 1):
+        stats.iprint(i)
+    stats.sprint("times tested")
+    for i in range(n + 1):
+        stats.iprint(lext[i])
+    if lext[0] > 0:  # otherwise never a degeneracy
+        stats.sprint("% of pivots")
+        for i in range(0, n + 1):
+            stats.iprint(round(lext[i] * 100 / tableau.pivotcount))
+        stats.sprint("avg comparisons")
+        for i in range(n + 1):
+            if lext[i] > 0:
+                x = round(tableau.lexcomparisons[i] * 10 / lext[0])
+                stats.sprint(str(x / 10.0))
+            else:
+                stats.sprint("-")
+    return stats
+
+
 def runlemke(*, lcp, verbose=False, lexstats=False, z0=False, silent=False):
     global filehandle
     # z0: printout value of z0
@@ -517,7 +516,9 @@ def runlemke(*, lcp, verbose=False, lexstats=False, z0=False, silent=False):
                 else:
                     printout("step,z0=", tabl.pivotcount, 0.0)
             # if (flags.bdocupivot)
-            printout(tabl.docupivot(leave, enter))
+            tabl.assertbasic(leave, "docupivot")
+            tabl.assertcobasic(enter, "docupivot")
+            printout(docupivot(tabl.vartoa(leave), tabl.vartoa(enter)))
             tabl.pivot(leave, enter)
             if z0leave:
                 if z0:
@@ -534,16 +535,16 @@ def runlemke(*, lcp, verbose=False, lexstats=False, z0=False, silent=False):
         printout(tabl)
         # if (flags.boutsol)
         tabl.createsol()
-        printout(tabl.outsol())
+        printout(outsol(tabl))
         if lexstats:
-            printout(tabl.outstatistics())
+            printout(outstatistics(tabl))
 
         return tabl.solution
     except RayTermination as e:
         printout(str(e))
         printout(e.tableau)
         printout("Current basis not an LCP solution:")
-        printout(e.tableau.outsol())
+        printout(outsol(e.tableau))
         return None
 
 
