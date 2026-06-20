@@ -1,7 +1,7 @@
 from collections import defaultdict
 from fractions import Fraction as Fr
 
-from src.lemke.lemke import lcp
+from lemke.lemke import lcp
 from tests.test_lcp import lemke_solver
 
 EMPTY: tuple[()] = ()  # empty sequence
@@ -56,7 +56,7 @@ def build_sequence_form_lcp(game):
     # payoffs {(sequence1, sequence2): [sum_u1, sum_u2]}
     payoff = defaultdict(lambda: [Fr(0), Fr(0)])
 
-    def dfs(node, s1, s2, prob, u1 = Fr(0), u2 = Fr(0)):
+    def dfs(node, s1, s2, prob, u1=Fr(0), u2=Fr(0)):
         # accumulate payoffs from outcome nodes along the path
         if node.outcome is not None:
             u1 += Fr(node.outcome[p1])
