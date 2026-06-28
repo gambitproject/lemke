@@ -131,16 +131,6 @@ def rangesplit(s, endrange=50):
 
 # used for both A and B
 class payoffmatrix:
-    # create zero matrix of given dimensions
-    # def __init__(self, m, n):
-    #    self.numrows = m
-    #    self.numcolumns = n
-    #    self.matrix = np.zeros( (m,n), dtype=fractions.Fraction)
-    #    self.negmatrix = np.zeros( (m,n), dtype=fractions.Fraction)
-    #    self.max = 0
-    #    self.min = 0
-    #    self.negshift = 0
-
     # create matrix from any numerical matrix
     def __init__(self, A):
         AA = np.array(A)
