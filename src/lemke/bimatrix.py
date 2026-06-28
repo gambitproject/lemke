@@ -193,13 +193,13 @@ class payoffmatrix:
 
 
 class bimatrix:
-    # create A,B given m,n
-    # def __init__(self, m, n):
-    #    self.A = payoffmatrix(m,n)
-    #    self.B = payoffmatrix(m,n)
+    def __init__(self, A, B):
+        self.A = A
+        self.B = B
 
     # create A,B from file
-    def __init__(self, filename):
+    @classmethod
+    def from_file(cls, filename):
         lines = utils.stripcomments(filename)
         # flatten into words
         words = utils.towords(lines)
@@ -212,10 +212,11 @@ class bimatrix:
             exit(1)
         k = 2
         C = utils.tomatrix(m, n, words, k)
-        self.A = payoffmatrix(C)
+        A = payoffmatrix(C)
         k += m * n
         C = utils.tomatrix(m, n, words, k)
-        self.B = payoffmatrix(C)
+        B = payoffmatrix(C)
+        return cls(A, B)
 
     def __str__(self):
         out = "# m,n= \n" + str(self.A.numrows)
@@ -371,7 +372,7 @@ def main():
     processArguments()
     printglobals()
 
-    G = bimatrix(gamefilename)
+    G = bimatrix.from_file(gamefilename)
     print(G)
     G.LH(LHstring)
     G.tracing(trace)

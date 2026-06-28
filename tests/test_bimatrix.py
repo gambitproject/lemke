@@ -94,7 +94,9 @@ class GameTestCase:
 UNIQUE_PURE_NE_CASES = [
     pytest.param(
             GameTestCase(
-                factory=lambda: bimatrix(FIXTURES_DIR / "unique_pure_single_strategy_1x1"),
+                factory=lambda: bimatrix.from_file(
+                    FIXTURES_DIR / "unique_pure_single_strategy_1x1"
+                ),
                 expected=[[Fr(1), Fr(1)]],
             ),
             id="unique_pure_single_strategy_1x1",
@@ -102,7 +104,7 @@ UNIQUE_PURE_NE_CASES = [
 
     pytest.param(
         GameTestCase(
-            factory=lambda: bimatrix(FIXTURES_DIR / "unique_pure_single_strategy_1x2"),
+            factory=lambda: bimatrix.from_file(FIXTURES_DIR / "unique_pure_single_strategy_1x2"),
             expected=[[Fr(1), Fr(0), Fr(1)]],
         ),
         id="unique_pure_single_strategy_1x2",
@@ -110,7 +112,9 @@ UNIQUE_PURE_NE_CASES = [
 
     pytest.param(
         GameTestCase(
-            factory=lambda: bimatrix(FIXTURES_DIR / "unique_pure_dominant_prisoners_dilemma"),
+            factory=lambda: bimatrix.from_file(
+                FIXTURES_DIR / "unique_pure_dominant_prisoners_dilemma"
+            ),
             expected=[[Fr(0), Fr(1), Fr(0), Fr(1)]]
         ),
         id="unique_pure_dominant_prisoners_dilemma",
@@ -121,7 +125,7 @@ UNIQUE_PURE_NE_CASES = [
 UNIQUE_MIXED_NE_CASES = [
     pytest.param(
         GameTestCase(
-            factory=lambda: bimatrix(FIXTURES_DIR / "unique_mixed_matching_pennies"),
+            factory=lambda: bimatrix.from_file(FIXTURES_DIR / "unique_mixed_matching_pennies"),
             expected=[[Fr(1, 2), Fr(1, 2), Fr(1, 2), Fr(1, 2)]],
         ),
         id="unique_mixed_matching_pennies",
@@ -129,7 +133,7 @@ UNIQUE_MIXED_NE_CASES = [
 
     pytest.param(
         GameTestCase(
-            factory=lambda: bimatrix(FIXTURES_DIR / "unique_mixed_rock_paper_scissors"),
+            factory=lambda: bimatrix.from_file(FIXTURES_DIR / "unique_mixed_rock_paper_scissors"),
             expected=[[Fr(1, 3), Fr(1, 3), Fr(1, 3), Fr(1, 3), Fr(1, 3), Fr(1, 3)]],
         ),
         id="unique_mixed_rock_paper_scissors",
@@ -140,28 +144,30 @@ UNIQUE_MIXED_NE_CASES = [
 MULTIPLE_FINITE_NE_CASES = [
     pytest.param(
         GameTestCase(
-            factory=lambda: bimatrix(FIXTURES_DIR / "multiple_finite_pure_coordination"),
+            factory=lambda: bimatrix.from_file(FIXTURES_DIR / "multiple_finite_pure_coordination"),
         ),
         id="multiple_finite_pure_coordination",
     ),
 
     pytest.param(
         GameTestCase(
-            factory=lambda: bimatrix(FIXTURES_DIR / "multiple_finite_battle_of_the_sexes"),
+            factory=lambda: bimatrix.from_file(
+                FIXTURES_DIR / "multiple_finite_battle_of_the_sexes"
+            ),
         ),
         id="multiple_finite_battle_of_the_sexes",
     ),
 
     pytest.param(
         GameTestCase(
-            factory=lambda: bimatrix(FIXTURES_DIR / "multiple_finite_4x2"),
+            factory=lambda: bimatrix.from_file(FIXTURES_DIR / "multiple_finite_4x2"),
         ),
         id="multiple_finite_4x2",
     ),
 
     pytest.param(
         GameTestCase(
-            factory=lambda: bimatrix(FIXTURES_DIR / "multiple_finite_3x2"),
+            factory=lambda: bimatrix.from_file(FIXTURES_DIR / "multiple_finite_3x2"),
         ),
         id="multiple_finite_3x2",
     ),
@@ -171,14 +177,14 @@ MULTIPLE_FINITE_NE_CASES = [
 INFINITE_NE_CASES = [
     pytest.param(
         GameTestCase(
-            factory=lambda: bimatrix(FIXTURES_DIR / "infinite_equilibria_degenerate_1"),
+            factory=lambda: bimatrix.from_file(FIXTURES_DIR / "infinite_equilibria_degenerate_1"),
         ),
         id="infinite_equilibria_degenerate_1",
     ),
 
     pytest.param(
         GameTestCase(
-            factory=lambda: bimatrix(FIXTURES_DIR / "infinite_equilibria_degenerate_2"),
+            factory=lambda: bimatrix.from_file(FIXTURES_DIR / "infinite_equilibria_degenerate_2"),
         ),
         id="infinite_equilibria_degenerate_2",
     ),
