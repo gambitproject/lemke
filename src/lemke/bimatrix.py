@@ -228,25 +228,28 @@ class bimatrix:
         m = self.A.numrows
         n = self.A.numcolumns
         lcpdim = m + n + 2
-        lcp = lemke.lcp(lcpdim)
-        lcp.q[lcpdim - 2] = -1
-        lcp.q[lcpdim - 1] = -1
+
+        q = [0 for _ in range(lcpdim)]
+        M = [[0] * lcpdim for _ in range(lcpdim)]
+
+        q[lcpdim - 2] = -1
+        q[lcpdim - 1] = -1
+
         for i in range(m):
-            lcp.M[lcpdim - 2][i] = 1
-            lcp.M[i][lcpdim - 2] = -1
+            M[lcpdim - 2][i] = 1
+            M[i][lcpdim - 2] = -1
         for j in range(m, m + n):
-            lcp.M[lcpdim - 1][j] = 1
-            lcp.M[j][lcpdim - 1] = -1
+            M[lcpdim - 1][j] = 1
+            M[j][lcpdim - 1] = -1
         for i in range(m):
             for j in range(n):
-                lcp.M[i][j + m] = self.A.negmatrix[i][j]
+                M[i][j + m] = self.A.negmatrix[i][j]
         for j in range(n):
             for i in range(m):
-                lcp.M[j + m][i] = self.B.negmatrix[i][j]
+                M[j + m][i] = self.B.negmatrix[i][j]
         # d for now
-        for i in range(lcpdim):
-            lcp.d[i] = 1
-        return lcp
+        d = [1 for _ in range(lcpdim)]
+        return lemke.lcp(M, q, d)
 
     def runLH(self, droppedlabel):
         lcp = self.createLCP()
