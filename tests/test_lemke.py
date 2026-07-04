@@ -162,3 +162,21 @@ def test_cli_runs_without_error(tmp_path, extra_args):
     result = runner.invoke(main, [str(file_path)] + extra_args)
 
     assert result.exit_code == 0
+
+
+def test_cli_rejects_missing_file(tmp_path):
+    missing_path = tmp_path / "missing"
+
+    runner = CliRunner()
+    result = runner.invoke(main, [str(missing_path)])
+
+    assert result.exit_code == 2
+    assert "does not exist" in result.output.lower()
+
+
+def test_cli_rejects_directory(tmp_path):
+    runner = CliRunner()
+    result = runner.invoke(main, [str(tmp_path)])
+
+    assert result.exit_code == 2
+    assert "is a directory" in result.output.lower()
