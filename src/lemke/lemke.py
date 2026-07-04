@@ -526,7 +526,7 @@ def main(verbose, z0, lcpfilename):
     """
     Tool for solving linear complementarity problems using Lemke's algorithm.
 
-    [LCPFILENAME] is the path to the input file
+    LCPFILENAME is the path to the input file.
     """
 
     print(f"verbose={verbose} lcpfilename={lcpfilename} z0={z0}")
