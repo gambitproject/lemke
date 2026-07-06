@@ -253,7 +253,7 @@ class bimatrix:
         lcp.d[droppedlabel - 1] = 0  # subsidize this label
         tabl = lemke.tableau(lcp)
         # tabl.runlemke(verbose=True, lexstats=True, z0=gz0)
-        tabl.runlemke(silent=True)
+        tabl.runlemke()
         return tuple(getequil(tabl))
 
     def LH(self, LHstring):
@@ -281,7 +281,7 @@ class bimatrix:
         xB = xprior @ self.B.negmatrix
         lcp.d = np.hstack((Ay, xB, [1, 1]))
         tabl = lemke.tableau(lcp)
-        tabl.runlemke(silent=True)
+        tabl.runlemke()
         return tuple(getequil(tabl))
 
     def tracing(self, trace):

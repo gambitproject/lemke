@@ -26,7 +26,7 @@ def lemke_solver(lcp_instance: lcp) -> list[Fr]:
     """Runs Lemke's algorithm on the given LCP and returns the solution."""
 
     tabl = tableau(lcp_instance)
-    tabl.runlemke(verbose=False, z0=False, silent=False)
+    tabl.runlemke()
     return tabl.solution
 
 
