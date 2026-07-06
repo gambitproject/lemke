@@ -38,6 +38,11 @@ test = [
     "pygambit",
 ]
 
+dev = [
+    "pre-commit",
+    "ruff",
+]
+
 [project.urls]
 Repository = "https://github.com/gambitproject/lemke.git"
 
