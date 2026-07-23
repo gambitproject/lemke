@@ -1,4 +1,4 @@
-EFG 2 R "Matching pennies (zero-sum with imperfect info)" { "1" "2" }
+EFG 2 R "Matching pennies (zero-sum with imperfect info)" { "Player 1" "Player 2" }
 
 p "" 1 1 "P1 choice" { "Heads" "Tails" } 0
 p "" 2 1 "P2 Response" { "Heads" "Tails" } 0
