@@ -151,7 +151,7 @@ def test_lexminvar_with_positive_entry(row0, row1):
     [],
     ["--verbose", "--z0"],
 ])
-def test_cli_runs_without_error(tmp_path, extra_args):
+def test_exit_code_0_on_success(tmp_path, extra_args):
     file_path = tmp_path / "test.lcp"
     file_path.write_text("n= 2\nM= 1 0 0 1\nq= 1 1\nd= 1 1\n")
 
@@ -159,6 +159,16 @@ def test_cli_runs_without_error(tmp_path, extra_args):
     result = runner.invoke(main, [str(file_path)] + extra_args)
 
     assert result.exit_code == 0
+
+
+def test_exit_code_1_on_ray_termination(tmp_path):
+    file_path = tmp_path / "test.lcp"
+    file_path.write_text("n= 2\nM= -1 0 0 -1\nq= -1 -1\nd= 1 1\n")
+
+    runner = CliRunner()
+    result = runner.invoke(main, [str(file_path)])
+
+    assert result.exit_code == 1
 
 
 def test_cli_rejects_missing_file(tmp_path):

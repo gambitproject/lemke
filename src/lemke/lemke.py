@@ -584,10 +584,13 @@ def main(verbose, z0, lcpfilename):
 
     m = lcp(lcpfilename)
 
-    runlemke(
+    result = runlemke(
         lcp=m,
         callback=PrintingCallback(stream=sys.stdout, verbose=verbose, z0=z0),
     )
+
+    if result is None:
+        sys.exit(1)
 
 
 if __name__ == "__main__":
