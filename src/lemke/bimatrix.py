@@ -252,7 +252,12 @@ class bimatrix:
         lcp = self.createLCP()
         lcp.d[droppedlabel - 1] = 0  # subsidize this label
         # tabl.runlemke(verbose=True, lexstats=True, z0=gz0)
-        equilibrium = lemke.runlemke(lcp=lcp)[1: lcp.n - 1]
+
+        result = lemke.runlemke(lcp=lcp)
+        if result is None:
+            raise RuntimeError("runlemke() failed to find a solution unexpectedly.")
+
+        equilibrium = result[1: lcp.n - 1]
         return tuple(equilibrium)
 
     def LH(self, LHstring):
@@ -279,7 +284,12 @@ class bimatrix:
         Ay = self.A.negmatrix @ yprior
         xB = xprior @ self.B.negmatrix
         lcp.d = np.hstack((Ay, xB, [1, 1]))
-        equilibrium = lemke.runlemke(lcp=lcp)[1: lcp.n - 1]
+
+        result = lemke.runlemke(lcp=lcp)
+        if result is None:
+            raise RuntimeError("runlemke() failed to find a solution unexpectedly.")
+
+        equilibrium = result[1: lcp.n - 1]
         return tuple(equilibrium)
 
     def tracing(self, trace):
