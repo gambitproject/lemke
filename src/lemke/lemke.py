@@ -4,44 +4,9 @@ import fractions
 import math  # gcd
 import sys
 
+import click
+
 from . import columnprint, utils
-
-# global defaults
-lcpfilename = "lcp"
-outfile = lcpfilename + ".out"
-verbose = False
-silent = False
-z0 = False
-
-
-# process command-line arguments
-def processArguments():
-    global lcpfilename, outfile, verbose, silent, z0
-    helpstring = """usage: lemke.py [options]
-options: -v, -verbose : printout intermediate tableaus
-         -s, -silent  : send output to <lcpfilename>.out
-         -z0 : show value of z0 at each step
-         -?, -help:    show this help
-         <lcpfilename> (default: "lcp", must not start with "-")
-         Example: [python] lemke.py -v 2lcp"""
-    arglist = sys.argv[1:]
-    showhelp = False
-    for s in arglist:
-        if s == "-v" or s == "-verbose":
-            verbose = True
-        elif s == "-s" or s == "-silent":
-            silent = True
-        elif s == "-z0":
-            z0 = True
-        elif s[0] == "-":
-            showhelp = True
-        else:
-            lcpfilename = s
-            outfile = s + ".out"
-    if showhelp:
-        print(helpstring)
-        exit(0)
-    return
 
 
 # LCP data M,q,d
@@ -494,7 +459,7 @@ class PrintingCallback(LemkeCallback):
         print(*args, file=self.stream)
 
     def on_start(self, lcp, tableau):
-        self.printout(f"verbose={verbose} lcpfilename={lcpfilename} silent={silent} z0={z0}")
+        self.printout(f"verbose={self.verbose} z0={self.z0} lexstats={self.lexstats}")
         self.printout(lcp)
         self.printout("==================================")
 
@@ -592,22 +557,37 @@ def runlemke(*, lcp, callback=None):
         return None
 
 
-def main():
-    processArguments()
+@click.command(
+    context_settings={"help_option_names": ["-?", "-h", "--help"]},
+)
+@click.option(
+    "-v",
+    "--verbose",
+    is_flag=True,
+    help="Printout intermediate tableaus",
+)
+@click.option(
+    "--z0",
+    is_flag=True,
+    help="Show value of z0 at each step",
+)
+@click.argument(
+    "lcpfilename",
+    type=click.Path(exists=True, readable=True, file_okay=True, dir_okay=False),
+)
+def main(verbose, z0, lcpfilename):
+    """
+    Tool for solving linear complementarity problems using Lemke's algorithm.
+
+    LCPFILENAME is the path to the input file.
+    """
 
     m = lcp(lcpfilename)
 
-    if silent:
-        with open(outfile, "w") as f:
-            runlemke(
-                lcp=m,
-                callback=PrintingCallback(stream=f, verbose=verbose, z0=z0),
-            )
-    else:
-        runlemke(
-            lcp=m,
-            callback=PrintingCallback(stream=sys.stdout, verbose=verbose, z0=z0),
-        )
+    runlemke(
+        lcp=m,
+        callback=PrintingCallback(stream=sys.stdout, verbose=verbose, z0=z0),
+    )
 
 
 if __name__ == "__main__":

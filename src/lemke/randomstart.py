@@ -1,8 +1,10 @@
 import fractions
 import random
-import sys
 
+import click
 import matplotlib.pyplot as plt
+
+MAX_ACCURACY = 10_000_000
 
 
 # give random n-tuple uniformly from unit simplex
@@ -31,6 +33,9 @@ def randInSimplex(n, naive=False):
 # round an array <x> of probabilities to fractions with
 # denominator <accuracy>
 def roundArray(x, accuracy=10000):
+    if not 1 <= accuracy <= MAX_ACCURACY:
+        raise ValueError(f"accuracy must be between 1 and {MAX_ACCURACY}")
+
     n = len(x)
     sum = 0
     numerator = [0] * n
@@ -68,24 +73,37 @@ def maptotriangle(vec):
     return x, y
 
 
-def main():
-    arglist = sys.argv
-    print("Usage: ", arglist[0],
-          "[numpoints [accuracy [higherdim ['n[aive]']]]]")
-    numpoints = 200  # number of points plotted
-    accuracy = 20  # coarse accuracy
-    higherdim = 3  # display middle 3 dimensions
-    naiveplot = False  # if True just sum random numbers
-    if len(arglist) > 1:
-        numpoints = int(arglist[1])
-    if len(arglist) > 2:
-        accuracy = int(arglist[2])
-    if len(arglist) > 3:
-        a = int(arglist[3])
-        if 2 < a < 11:
-            higherdim = a
-    if len(arglist) > 4:
-        naiveplot = True
+@click.command(
+    context_settings={"help_option_names": ["-?", "-h", "--help"]},
+)
+@click.option(
+    "--numpoints",
+    default=200,
+    show_default=True,
+    help="Number of points plotted",
+)
+@click.option(
+    "--accuracy",
+    default=20,
+    show_default=True,
+    help="Denominator x: each coordinate is rounded to the nearest multiple of 1/x",
+    type=click.IntRange(1, MAX_ACCURACY),
+    metavar="INTEGER",
+)
+@click.option(
+    "--higherdim",
+    default=3,
+    show_default=True,
+    help="Dimension from which the middle 3 components will be sampled",
+    type=click.IntRange(3, 10),
+    metavar="INTEGER",
+)
+@click.option(
+    "--naiveplot",
+    is_flag=True,
+    help="Sample naively by normalizing random uniforms (biased toward center)",
+)
+def main(numpoints, accuracy, higherdim, naiveplot):
     print(
         f"numpoints={numpoints} accuracy={accuracy} higherdim={higherdim} naiveplot={naiveplot}"
     )

@@ -5,6 +5,9 @@ from lemke.lemke import lcp, runlemke
 
 EMPTY: tuple[()] = ()  # empty sequence
 
+PLAYER_1 = "Player 1"
+PLAYER_2 = "Player 2"
+
 
 def lcp_from_data(M: list[list[Fr]], q: list[Fr], d: list[Fr]) -> lcp:
     """Creates an LCP instance with given M, q, d."""
@@ -43,7 +46,8 @@ def build_sequence_form_lcp(game):
     #         .  -F  .   .   .  .            f
     #         .   F  .   .   .  .           -f
 
-    p1, p2 = game.players[0], game.players[1]
+    p1 = game.players[PLAYER_1]
+    p2 = game.players[PLAYER_2]
 
     # sequences for each player (infoset, action)
     seqs1, seqs2 = [EMPTY], [EMPTY]
@@ -57,7 +61,7 @@ def build_sequence_form_lcp(game):
 
     def dfs(node, s1, s2, prob, u1=Fr(0), u2=Fr(0)):
         # accumulate payoffs from outcome nodes along the path
-        if node.outcome is not None:
+        if node.outcome:
             u1 += Fr(node.outcome[p1])
             u2 += Fr(node.outcome[p2])
 
@@ -227,7 +231,7 @@ def solve_via_sequence_form(game):
     x = x_y[:ns1]
     y = x_y[ns1:]
 
-    x_probs = get_action_probabilities(game.players[0], infoset_to_parent1, idx1, x)
-    y_probs = get_action_probabilities(game.players[1], infoset_to_parent2, idx2, y)
+    x_probs = get_action_probabilities(game.players[PLAYER_1], infoset_to_parent1, idx1, x)
+    y_probs = get_action_probabilities(game.players[PLAYER_2], infoset_to_parent2, idx2, y)
 
     return x_probs, y_probs
