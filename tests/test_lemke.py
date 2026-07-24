@@ -4,6 +4,7 @@ import pytest
 from click.testing import CliRunner
 
 from lemke.lemke import (
+    RayTermination,
     lcp,
     main,
     tableau,
@@ -36,10 +37,8 @@ def test_lcp_invalid_file(tmp_path, content):
     file_path = tmp_path / "lcp"
     file_path.write_text(content)
 
-    with pytest.raises(SystemExit) as exc_info:
+    with pytest.raises(ValueError):
         lcp(str(file_path))
-
-    assert exc_info.value.code == 1
 
 
 # ---   TABLEAU INIT   ----------------------------------------------
@@ -90,7 +89,7 @@ def test_complement_pairs(i):
 
 def test_complement_z0_fails():
     t = tableau(lcp(2))
-    with pytest.raises(SystemExit):
+    with pytest.raises(RuntimeError):
         t.complement(0)
 
 
@@ -124,10 +123,8 @@ def test_lexminvar_without_positive_entry():
 
     enter = 0  # z0, cobasic in col 0
 
-    with pytest.raises(SystemExit) as exc_info:
+    with pytest.raises(RayTermination):
         t.lexminvar(enter)
-
-    assert exc_info.value.code == 1
 
 
 @pytest.mark.parametrize(
