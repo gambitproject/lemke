@@ -314,11 +314,6 @@ def common_options(f):
 def lh(filename, labels):
     """Find equilibria using the Lemke-Howson algorithm."""
 
-    # for debugging
-    print("filename:", filename)
-    print("labels:", labels)
-    print()
-
     G = bimatrix(filename)
     G.LH(labels)
 
@@ -348,13 +343,6 @@ def trace(filename, priors, seed, accuracy):
     Without --priors, uses the centroid.
     With --priors N, uses N random starting points.
     """
-
-    # for debugging
-    print("file:", filename)
-    print("priors:", priors)
-    print("seed:", seed)
-    print("accuracy:", accuracy)
-    print()
 
     G = bimatrix(filename)
 
