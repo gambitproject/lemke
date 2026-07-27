@@ -24,7 +24,7 @@ import pygambit
 import pytest
 
 from lemke import randomstart
-from lemke.bimatrix import bimatrix
+from lemke.bimatrix import bimatrix, uniform
 
 FIXTURES_DIR = Path("tests/fixtures/bimatrix")
 
@@ -34,6 +34,19 @@ def lh_solver(G: bimatrix) -> list[list[Fr]]:
 
     lh_eqs_dict = G.LH("1-" + str(G.A.numrows + G.A.numcolumns))
     return [list(eq_key) for eq_key in lh_eqs_dict]
+
+
+def trace_uniform_prior(game: bimatrix) -> list[list[Fr]]:
+    """Copied from bimatrix.py, but explicitly returns equilibria."""
+
+    m = game.A.numrows
+    n = game.A.numcolumns
+
+    xprior = uniform(m)
+    yprior = uniform(n)
+    eq = game.runtrace(xprior, yprior)
+
+    return [list(eq)]
 
 
 # trace = 10, seed = 0
@@ -183,7 +196,8 @@ INFINITE_NE_CASES = [
 
 SOLVERS = [
     pytest.param(lh_solver, id="LH"),
-    pytest.param(partial(trace_random_priors, trace=10, seed=0), id="tracing"),
+    pytest.param(trace_uniform_prior, id="trace_uniform"),
+    pytest.param(partial(trace_random_priors, trace=10, seed=0), id="trace_random"),
 ]
 
 
