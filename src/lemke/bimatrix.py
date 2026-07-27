@@ -8,6 +8,8 @@ import click
 import numpy as np
 
 from . import columnprint, lemke, randomstart, utils
+from .randomstart import MAX_ACCURACY
+from .utils import MAXDECIMALS
 
 # file format:
 # <m> <n>
@@ -303,6 +305,8 @@ def common_options(f):
         "--decimals",
         default=4,
         show_default=True,
+        type=click.IntRange(min=0, max=MAXDECIMALS),
+        metavar="INTEGER",
         help="Allowed payoff digits in input after decimal point",
     )
     # @click.option(
@@ -366,7 +370,9 @@ def trace_uniform_cmd(filename):
     "--accuracy",
     default=1000,
     show_default=True,
-    help="Denominator x: each random prior is rounded to the nearest multiple of 1/x",
+    type=click.IntRange(1, MAX_ACCURACY),
+    metavar="INTEGER",
+    help="Denominator x: each coordinate of the prior is rounded to the nearest 1/x",
 )
 def trace_random_cmd(filename, priors, seed, accuracy):
     """Trace using random prior(s)."""
