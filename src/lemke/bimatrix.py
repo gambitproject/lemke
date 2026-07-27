@@ -332,11 +332,29 @@ def lh(filename, labels):
     G.LH(labels)
 
 
-@main.command()
+@main.group()
+def trace():
+    """Find equilibria using the tracing procedure."""
+    pass
+
+
+@trace.command(name="uniform")
+@common_options
+def trace_uniform_cmd(filename):
+    """Trace using a uniform prior."""
+
+    G = bimatrix(filename)
+    G.trace_uniform_prior()
+
+
+@trace.command(name="random")
 @common_options
 @click.option(
     "--priors",
+    default=1,
+    show_default=True,
     type=click.IntRange(min=1),
+    metavar="INTEGER",
     help="Number of random priors",
 )
 @click.option(
@@ -350,17 +368,8 @@ def lh(filename, labels):
     show_default=True,
     help="Denominator x: each random prior is rounded to the nearest multiple of 1/x",
 )
-def trace(filename, priors, seed, accuracy):
-    """
-    Find equilibria using the tracing procedure.
-
-    Without --priors, uses the centroid.
-    With --priors N, uses N random starting points.
-    """
+def trace_random_cmd(filename, priors, seed, accuracy):
+    """Trace using random prior(s)."""
 
     G = bimatrix(filename)
-
-    if priors is None:
-        G.trace_uniform_prior()
-    else:
-        G.trace_random_priors(priors, seed, accuracy)
+    G.trace_random_priors(priors, seed, accuracy)
