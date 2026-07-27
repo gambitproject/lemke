@@ -1,5 +1,7 @@
 """
 Test Lemke-Howson algorithm and tracing procedure on bimatrix games.
+Tracing procedure is tested with a uniform prior, as well as random priors.
+Seed is fixed, so that random priors are reproducible.
 
 Conditions checked:
     For games with unique equilibrium:
@@ -15,13 +17,14 @@ import dataclasses
 import random
 import typing
 from fractions import Fraction as Fr
+from functools import partial
 from pathlib import Path
 
 import pygambit
 import pytest
 
 from lemke import randomstart
-from lemke.bimatrix import bimatrix, uniform
+from lemke.bimatrix import bimatrix
 
 FIXTURES_DIR = Path("tests/fixtures/bimatrix")
 
@@ -33,40 +36,33 @@ def lh_solver(G: bimatrix) -> list[list[Fr]]:
     return [list(eq_key) for eq_key in lh_eqs_dict]
 
 
-def tracing_solver(
-    G: bimatrix,
-    trace: int = 10,
-    seed: int = 0,
-    accuracy: int = 1000,
+# trace = 10, seed = 0
+def trace_random_priors(
+    game: bimatrix,
+    trace,
+    seed=None,
+    accuracy=1000,
 ) -> list[list[Fr]]:
-    """ Run tracing & return the list of equilibria found. """
+    """Copied from bimatrix.py, but explicitly returns equilibria."""
 
-    if trace < 0:
-        return []
+    if trace <= 0:
+        raise ValueError("Number of priors must be a positive integer")
+    m = game.A.numrows
+    n = game.A.numcolumns
+    trset = {}  # dict of equilibria, how often found
 
-    m = G.A.numrows
-    n = G.A.numcolumns
-    trset = {}
-
-    if trace == 0:
-        xprior = uniform(m)
-        yprior = uniform(n)
-        eq = G.runtrace(xprior, yprior)
-        trset[eq] = 1
-        trace = 1
-    else:
-        for k in range(trace):
-            if seed >= 0:
-                random.seed(10 * trace * seed + k)
-            x = randomstart.randInSimplex(m)
-            xprior = randomstart.roundArray(x, accuracy)
-            y = randomstart.randInSimplex(n)
-            yprior = randomstart.roundArray(y, accuracy)
-            eq = G.runtrace(xprior, yprior)
-            if eq in trset:
-                trset[eq] += 1
-            else:
-                trset[eq] = 1
+    for k in range(trace):
+        if seed is not None:
+            random.seed(10 * trace * seed + k)
+        x = randomstart.randInSimplex(m)
+        xprior = randomstart.roundArray(x, accuracy)
+        y = randomstart.randInSimplex(n)
+        yprior = randomstart.roundArray(y, accuracy)
+        eq = game.runtrace(xprior, yprior)
+        if eq in trset:
+            trset[eq] += 1
+        else:
+            trset[eq] = 1
 
     return [list(eq) for eq in trset]
 
@@ -187,7 +183,7 @@ INFINITE_NE_CASES = [
 
 SOLVERS = [
     pytest.param(lh_solver, id="LH"),
-    pytest.param(tracing_solver, id="tracing"),
+    pytest.param(partial(trace_random_priors, trace=10, seed=0), id="tracing"),
 ]
 
 

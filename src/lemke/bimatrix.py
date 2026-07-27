@@ -192,37 +192,51 @@ class bimatrix:
         tabl.runlemke()
         return tuple(getequil(tabl))
 
-    def tracing(self, trace, seed=None, accuracy=1000):
-        if trace < 0:
+    def trace_uniform_prior(self):
+        m = self.A.numrows
+        n = self.A.numcolumns
+
+        xprior = uniform(m)
+        yprior = uniform(n)
+        eq = self.runtrace(xprior, yprior)
+
+        self._print_trace_results(
+            equilibria={eq: 1},
+            total_priors=1,
+        )
+
+    def trace_random_priors(self, trace, seed=None, accuracy=1000):
+        if trace <= 0:
             raise ValueError("Number of priors must be a positive integer")
         m = self.A.numrows
         n = self.A.numcolumns
         trset = {}  # dict of equilibria, how often found
-        if trace == 0:
-            xprior = uniform(m)
-            yprior = uniform(n)
+
+        for k in range(trace):
+            if seed is not None:
+                random.seed(10 * trace * seed + k)
+            x = randomstart.randInSimplex(m)
+            xprior = randomstart.roundArray(x, accuracy)
+            y = randomstart.randInSimplex(n)
+            yprior = randomstart.roundArray(y, accuracy)
+            # print (f"{k=} {xprior=} {yprior=}")
             eq = self.runtrace(xprior, yprior)
-            trset[eq] = 1
-            trace = 1  # for percentage
-        else:
-            for k in range(trace):
-                if seed is not None:
-                    random.seed(10 * trace * seed + k)
-                x = randomstart.randInSimplex(m)
-                xprior = randomstart.roundArray(x, accuracy)
-                y = randomstart.randInSimplex(n)
-                yprior = randomstart.roundArray(y, accuracy)
-                # print (f"{k=} {xprior=} {yprior=}")
-                eq = self.runtrace(xprior, yprior)
-                if eq in trset:
-                    trset[eq] += 1
-                else:
-                    print("found eq", str_eq(eq, m, n), "index", self.eqindex(eq, m, n))
-                    trset[eq] = 1
+            if eq in trset:
+                trset[eq] += 1
+            else:
+                print("found eq", str_eq(eq, m, n), "index", self.eqindex(eq, m, n))
+                trset[eq] = 1
+
+        self._print_trace_results(trset, trace)
+
+    def _print_trace_results(self, equilibria, total_priors):
+        m = self.A.numrows
+        n = self.A.numcolumns
+
         print("-------- statistics of equilibria found: --------")
-        for eq in trset:
-            print(trset[eq], "times found ", str_eq(eq, m, n))
-        print(trace, "total priors,", len(trset), "equilibria found")
+        for eq, count in equilibria.items():
+            print(count, "times found", str_eq(eq, m, n))
+        print(total_priors, "total priors,", len(equilibria), "equilibria found")
 
     def eqindex(self, eq, m, n):
         rowset, colset = supports(eq, m, n)
@@ -347,8 +361,6 @@ def trace(filename, priors, seed, accuracy):
     G = bimatrix(filename)
 
     if priors is None:
-        if seed is not None or accuracy != 1000:
-            raise click.UsageError("--seed and --accuracy require --priors")
-        G.tracing(0)
+        G.trace_uniform_prior()
     else:
-        G.tracing(priors, seed, accuracy)
+        G.trace_random_priors(priors, seed, accuracy)
