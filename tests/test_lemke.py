@@ -10,6 +10,14 @@ from lemke.lemke import (
 )
 
 
+def get_empty_lcp(n):
+    return lcp(
+        M=[[0] * n for _ in range(n)],
+        q=[0] * n,
+        d=[0] * n,
+    )
+
+
 # ---   LCP   -------------------------------------------------------
 @pytest.mark.parametrize("raw, expected", [
     ("1",    Fraction(1)),
@@ -22,7 +30,7 @@ def test_lcp_valid_file(tmp_path, raw, expected):
     file_path = tmp_path / "lcp"
     file_path.write_text(content)
 
-    m = lcp(str(file_path))
+    m = lcp.from_file(str(file_path))
     assert m.M[0][0] == expected
 
 
@@ -37,7 +45,7 @@ def test_lcp_invalid_file(tmp_path, content):
     file_path.write_text(content)
 
     with pytest.raises(SystemExit) as exc_info:
-        lcp(str(file_path))
+        lcp.from_file(str(file_path))
 
     assert exc_info.value.code == 1
 
@@ -45,7 +53,7 @@ def test_lcp_invalid_file(tmp_path, content):
 # ---   TABLEAU INIT   ----------------------------------------------
 def test_tableau_dimensions():
     n = 3
-    t = tableau(lcp(n))
+    t = tableau(get_empty_lcp(n))
     assert t.n == n
     assert len(t.A) == n
     assert len(t.A[0]) == n + 2
@@ -53,7 +61,7 @@ def test_tableau_dimensions():
 
 def test_tableau_initial_basis():
     n = 3
-    t = tableau(lcp(n))
+    t = tableau(get_empty_lcp(n))
     for i in range(2 * n + 1):
         if i <= n:
             assert t.bascobas[i] >= n, f"Z({i}) should be cobasic"
@@ -63,7 +71,7 @@ def test_tableau_initial_basis():
 
 def test_tableau_bascobas_whichvar_are_inverses():
     n = 3
-    t = tableau(lcp(n))
+    t = tableau(get_empty_lcp(n))
     for i in range(2 * n + 1):
         assert t.bascobas[t.whichvar[i]] == i
         assert t.whichvar[t.bascobas[i]] == i
@@ -72,7 +80,7 @@ def test_tableau_bascobas_whichvar_are_inverses():
 # ---   VARTOA   ----------------------------------------------------
 def test_vartoa():
     n = 3
-    t = tableau(lcp(n))
+    t = tableau(get_empty_lcp(n))
     assert t.vartoa(0) == "z0"
     assert t.vartoa(n + 1) == "w1"
     assert t.vartoa(n) == f"z{n}"
@@ -83,26 +91,27 @@ def test_vartoa():
 @pytest.mark.parametrize("i", [1, 2, 3])
 def test_complement_pairs(i):
     n = 3
-    t = tableau(lcp(n))
+    t = tableau(get_empty_lcp(n))
     assert t.complement(i) == n + i
     assert t.complement(n + i) == i
 
 
 def test_complement_z0_fails():
-    t = tableau(lcp(2))
+    t = tableau(get_empty_lcp(2))
     with pytest.raises(SystemExit):
         t.complement(0)
 
 
 # ---   PIVOT   -----------------------------------------------------
 def test_pivot_correctly_swaps_basis_variables():
-    m = lcp(2)
-    m.M = [
-        [Fraction(1), Fraction(0)],
-        [Fraction(0), Fraction(1)],
-    ]
-    m.q = [Fraction(-1), Fraction(-2)]
-    m.d = [Fraction(1), Fraction(1)]
+    m = lcp(
+        M=[
+            [Fraction(1), Fraction(0)],
+            [Fraction(0), Fraction(1)],
+        ],
+        q=[Fraction(-1), Fraction(-2)],
+        d=[Fraction(1), Fraction(1)],
+    )
 
     t = tableau(m)
 
@@ -117,7 +126,7 @@ def test_pivot_correctly_swaps_basis_variables():
 
 # ---   LEXMINVAR   -------------------------------------------------
 def test_lexminvar_without_positive_entry():
-    t = tableau(lcp(2))
+    t = tableau(get_empty_lcp(2))
 
     t.A[0][0] = -1
     t.A[1][0] = -3
@@ -138,7 +147,7 @@ def test_lexminvar_without_positive_entry():
     ],
 )
 def test_lexminvar_with_positive_entry(row0, row1):
-    t = tableau(lcp(2))
+    t = tableau(get_empty_lcp(2))
     t.A[0] = row0
     t.A[1] = row1
 
