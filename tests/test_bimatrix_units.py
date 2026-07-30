@@ -101,7 +101,7 @@ def small_game_file(tmp_path):
 
 
 def test_bimatrix_dimensions(small_game_file):
-    G = bimatrix(small_game_file)
+    G = bimatrix.from_file(small_game_file)
     assert G.A.numrows == 2
     assert G.A.numcolumns == 2
     assert G.B.numrows == 2
@@ -109,7 +109,7 @@ def test_bimatrix_dimensions(small_game_file):
 
 
 def test_bimatrix_payoff_values(small_game_file):
-    G = bimatrix(small_game_file)
+    G = bimatrix.from_file(small_game_file)
 
     expected = [
         [Fraction(1), Fraction(3, 4)],
@@ -133,25 +133,25 @@ def test_bimatrix_invalid_file_exits(tmp_path):
     path = tmp_path / "bad_game.txt"
     path.write_text(bad_content)
     with pytest.raises(SystemExit):
-        bimatrix(str(path))
+        bimatrix.from_file(str(path))
 
 
 # ---   BIMATRIX LCP  ----------------------------------------------------
 def test_q_last_two_entries_are_minus_one(small_game_file):
-    G = bimatrix(small_game_file)
+    G = bimatrix.from_file(small_game_file)
     lcp = G.createLCP()
     assert lcp.q[-1] == -1
     assert lcp.q[-2] == -1
 
 
 def test_d_defaults_to_all_ones(small_game_file):
-    G = bimatrix(small_game_file)
+    G = bimatrix.from_file(small_game_file)
     lcp = G.createLCP()
     assert all(d == 1 for d in lcp.d)
 
 
 def test_player_block_signs(small_game_file):
-    G = bimatrix(small_game_file)
+    G = bimatrix.from_file(small_game_file)
     lcp = G.createLCP()
     m, n = G.A.numrows, G.A.numcolumns
     lcpdim = m + n + 2
@@ -168,7 +168,7 @@ def test_player_block_signs(small_game_file):
 
 
 def test_payoff_blocks_use_negmatrix(small_game_file):
-    G = bimatrix(small_game_file)
+    G = bimatrix.from_file(small_game_file)
     lcp = G.createLCP()
     m, n = G.A.numrows, G.A.numcolumns
     for i in range(m):
@@ -182,7 +182,7 @@ def test_payoff_blocks_use_negmatrix(small_game_file):
 # ---   TRACE WITH RANDOM PRIORS  -------------------------------------------------
 @pytest.mark.parametrize("bad_priors", [0, -1, -100])
 def test_rejects_non_positive_num_priors(small_game_file, bad_priors):
-    G = bimatrix(small_game_file)
+    G = bimatrix.from_file(small_game_file)
     with pytest.raises(ValueError):
         G.trace_random_priors(bad_priors)
 
