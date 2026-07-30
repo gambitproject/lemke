@@ -11,67 +11,53 @@ from . import columnprint, utils
 
 # LCP data M,q,d
 class lcp:
-    # create LCP either with given n or from file
-    def __init__(self, arg):
-        if isinstance(arg, int):  # arg is an integer
-            n = self.n = arg
-            # self.M = np.zeros( (n,n), dtype=fractions.Fraction)
-            # self.q = np.zeros( (n), dtype=fractions.Fraction)
-            # self.d = np.zeros( (n), dtype=fractions.Fraction)
-            self.M = [[]] * n
-            for i in range(n):
-                self.M[i] = [0] * n
-            self.q = [0] * n
-            self.d = [0] * n
-        else:  # assume arg is a string = name of lcp file
-            # create LCP from file
-            filename = arg
-            lines = utils.stripcomments(filename)
-            # flatten into words
-            words = utils.towords(lines)
-            if words[0] != "n=":
+    def __init__(self, M, q, d):
+        self.M = M
+        self.q = q
+        self.d = d
+        self.n = len(d)
+
+    @classmethod
+    def from_file(cls, filename):
+        # create LCP from file
+        lines = utils.stripcomments(filename)
+        # flatten into words
+        words = utils.towords(lines)
+        if words[0] != "n=":
+            raise ValueError(
+                f"lcp file {filename!r} must start with 'n=' lcpdim, e.g. 'n= 5', "
+                f"not {words[0]!r}"
+            )
+        n = int(words[1])
+        needfracs = n * n + 2 * n
+        if len(words) != needfracs + 5:
+            # printout("in lcp file '",filename,"':")
+            raise ValueError(
+                f"in lcp file {filename!r}: "
+                f"n={n}, need keywords 'M=' 'q=' 'd=' and "
+                f"n*n + n + n = {needfracs} fractions, got {len(words) - 5}"
+            )
+        M, q, d = None, None, None
+        k = 2  # index in words
+        while k < len(words):
+            if words[k] == "M=":
+                k += 1
+                M = utils.tomatrix(n, n, words, k)
+                k += n * n
+            elif words[k] == "q=":
+                k += 1
+                q = utils.tovector(n, words, k)
+                k += n
+            elif words[k] == "d=":
+                k += 1
+                d = utils.tovector(n, words, k)
+                k += n
+            else:
                 raise ValueError(
-                    f"lcp file {filename!r} must start with 'n=' lcpdim, e.g. 'n= 5', "
-                    f"not {words[0]!r}"
+                    f"in lcp file {filename!r}: expected one of 'M=' 'q=' 'd=', "
+                    f"got {words[k]!r}"
                 )
-            n = int(words[1])
-            self.n = n
-            # self.M = np.zeros( (n,n), dtype=fractions.Fraction)
-            # self.d = np.zeros( (n), dtype=fractions.Fraction)
-            # self.q = np.zeros( (n), dtype=fractions.Fraction)
-            self.M = [[]] * n
-            for i in range(n):
-                self.M[i] = [0] * n
-            self.q = [0] * n
-            self.d = [0] * n
-            needfracs = n * n + 2 * n
-            if len(words) != needfracs + 5:
-                # printout("in lcp file '",filename,"':")
-                raise ValueError(
-                    f"in lcp file {filename!r}: "
-                    f"n={n}, need keywords 'M=' 'q=' 'd=' and "
-                    f"n*n + n + n = {needfracs} fractions, got {len(words) - 5}"
-                )
-            k = 2  # index in words
-            while k < len(words):
-                if words[k] == "M=":
-                    k += 1
-                    self.M = utils.tomatrix(n, n, words, k)
-                    k += n * n
-                elif words[k] == "q=":
-                    k += 1
-                    self.q = utils.tovector(n, words, k)
-                    k += n
-                elif words[k] == "d=":
-                    k += 1
-                    self.d = utils.tovector(n, words, k)
-                    k += n
-                else:
-                    raise ValueError(
-                        f"in lcp file {filename!r}: expected one of 'M=' 'q=' 'd=', "
-                        f"got {words[k]!r}"
-                    )
-            return
+        return cls(M, q, d)
 
     def __str__(self):
         n = self.n
@@ -582,7 +568,7 @@ def main(verbose, z0, lcpfilename):
     LCPFILENAME is the path to the input file.
     """
 
-    m = lcp(lcpfilename)
+    m = lcp.from_file(lcpfilename)
 
     result = runlemke(
         lcp=m,

@@ -1,5 +1,7 @@
 """
 Test Lemke-Howson algorithm and tracing procedure on bimatrix games.
+Tracing procedure is tested with a uniform prior, as well as random priors.
+Seed is fixed, so that random priors are reproducible.
 
 Conditions checked:
     For games with unique equilibrium:
@@ -15,6 +17,7 @@ import dataclasses
 import random
 import typing
 from fractions import Fraction as Fr
+from functools import partial
 from pathlib import Path
 
 import pygambit
@@ -33,40 +36,46 @@ def lh_solver(G: bimatrix) -> list[list[Fr]]:
     return [list(eq_key) for eq_key in lh_eqs_dict]
 
 
-def tracing_solver(
-    G: bimatrix,
-    trace: int = 10,
-    seed: int = 0,
-    accuracy: int = 1000,
+def trace_uniform_prior(game: bimatrix) -> list[list[Fr]]:
+    """Copied from bimatrix.py, but explicitly returns equilibria."""
+
+    m = game.A.numrows
+    n = game.A.numcolumns
+
+    xprior = uniform(m)
+    yprior = uniform(n)
+    eq = game.runtrace(xprior, yprior)
+
+    return [list(eq)]
+
+
+# trace = 10, seed = 0
+def trace_random_priors(
+    game: bimatrix,
+    trace,
+    seed=None,
+    accuracy=1000,
 ) -> list[list[Fr]]:
-    """ Run tracing & return the list of equilibria found. """
+    """Copied from bimatrix.py, but explicitly returns equilibria."""
 
-    if trace < 0:
-        return []
+    if trace <= 0:
+        raise ValueError("Number of priors must be a positive integer")
+    m = game.A.numrows
+    n = game.A.numcolumns
+    trset = {}  # dict of equilibria, how often found
 
-    m = G.A.numrows
-    n = G.A.numcolumns
-    trset = {}
-
-    if trace == 0:
-        xprior = uniform(m)
-        yprior = uniform(n)
-        eq = G.runtrace(xprior, yprior)
-        trset[eq] = 1
-        trace = 1
-    else:
-        for k in range(trace):
-            if seed >= 0:
-                random.seed(10 * trace * seed + k)
-            x = randomstart.randInSimplex(m)
-            xprior = randomstart.roundArray(x, accuracy)
-            y = randomstart.randInSimplex(n)
-            yprior = randomstart.roundArray(y, accuracy)
-            eq = G.runtrace(xprior, yprior)
-            if eq in trset:
-                trset[eq] += 1
-            else:
-                trset[eq] = 1
+    for k in range(trace):
+        if seed is not None:
+            random.seed(10 * trace * seed + k)
+        x = randomstart.randInSimplex(m)
+        xprior = randomstart.roundArray(x, accuracy)
+        y = randomstart.randInSimplex(n)
+        yprior = randomstart.roundArray(y, accuracy)
+        eq = game.runtrace(xprior, yprior)
+        if eq in trset:
+            trset[eq] += 1
+        else:
+            trset[eq] = 1
 
     return [list(eq) for eq in trset]
 
@@ -94,7 +103,9 @@ class GameTestCase:
 UNIQUE_PURE_NE_CASES = [
     pytest.param(
             GameTestCase(
-                factory=lambda: bimatrix(FIXTURES_DIR / "unique_pure_single_strategy_1x1"),
+                factory=lambda: bimatrix.from_file(
+                    FIXTURES_DIR / "unique_pure_single_strategy_1x1"
+                ),
                 expected=[[Fr(1), Fr(1)]],
             ),
             id="unique_pure_single_strategy_1x1",
@@ -102,7 +113,7 @@ UNIQUE_PURE_NE_CASES = [
 
     pytest.param(
         GameTestCase(
-            factory=lambda: bimatrix(FIXTURES_DIR / "unique_pure_single_strategy_1x2"),
+            factory=lambda: bimatrix.from_file(FIXTURES_DIR / "unique_pure_single_strategy_1x2"),
             expected=[[Fr(1), Fr(0), Fr(1)]],
         ),
         id="unique_pure_single_strategy_1x2",
@@ -110,7 +121,9 @@ UNIQUE_PURE_NE_CASES = [
 
     pytest.param(
         GameTestCase(
-            factory=lambda: bimatrix(FIXTURES_DIR / "unique_pure_dominant_prisoners_dilemma"),
+            factory=lambda: bimatrix.from_file(
+                FIXTURES_DIR / "unique_pure_dominant_prisoners_dilemma"
+            ),
             expected=[[Fr(0), Fr(1), Fr(0), Fr(1)]]
         ),
         id="unique_pure_dominant_prisoners_dilemma",
@@ -121,7 +134,7 @@ UNIQUE_PURE_NE_CASES = [
 UNIQUE_MIXED_NE_CASES = [
     pytest.param(
         GameTestCase(
-            factory=lambda: bimatrix(FIXTURES_DIR / "unique_mixed_matching_pennies"),
+            factory=lambda: bimatrix.from_file(FIXTURES_DIR / "unique_mixed_matching_pennies"),
             expected=[[Fr(1, 2), Fr(1, 2), Fr(1, 2), Fr(1, 2)]],
         ),
         id="unique_mixed_matching_pennies",
@@ -129,7 +142,7 @@ UNIQUE_MIXED_NE_CASES = [
 
     pytest.param(
         GameTestCase(
-            factory=lambda: bimatrix(FIXTURES_DIR / "unique_mixed_rock_paper_scissors"),
+            factory=lambda: bimatrix.from_file(FIXTURES_DIR / "unique_mixed_rock_paper_scissors"),
             expected=[[Fr(1, 3), Fr(1, 3), Fr(1, 3), Fr(1, 3), Fr(1, 3), Fr(1, 3)]],
         ),
         id="unique_mixed_rock_paper_scissors",
@@ -140,28 +153,30 @@ UNIQUE_MIXED_NE_CASES = [
 MULTIPLE_FINITE_NE_CASES = [
     pytest.param(
         GameTestCase(
-            factory=lambda: bimatrix(FIXTURES_DIR / "multiple_finite_pure_coordination"),
+            factory=lambda: bimatrix.from_file(FIXTURES_DIR / "multiple_finite_pure_coordination"),
         ),
         id="multiple_finite_pure_coordination",
     ),
 
     pytest.param(
         GameTestCase(
-            factory=lambda: bimatrix(FIXTURES_DIR / "multiple_finite_battle_of_the_sexes"),
+            factory=lambda: bimatrix.from_file(
+                FIXTURES_DIR / "multiple_finite_battle_of_the_sexes"
+            ),
         ),
         id="multiple_finite_battle_of_the_sexes",
     ),
 
     pytest.param(
         GameTestCase(
-            factory=lambda: bimatrix(FIXTURES_DIR / "multiple_finite_4x2"),
+            factory=lambda: bimatrix.from_file(FIXTURES_DIR / "multiple_finite_4x2"),
         ),
         id="multiple_finite_4x2",
     ),
 
     pytest.param(
         GameTestCase(
-            factory=lambda: bimatrix(FIXTURES_DIR / "multiple_finite_3x2"),
+            factory=lambda: bimatrix.from_file(FIXTURES_DIR / "multiple_finite_3x2"),
         ),
         id="multiple_finite_3x2",
     ),
@@ -171,14 +186,14 @@ MULTIPLE_FINITE_NE_CASES = [
 INFINITE_NE_CASES = [
     pytest.param(
         GameTestCase(
-            factory=lambda: bimatrix(FIXTURES_DIR / "infinite_equilibria_degenerate_1"),
+            factory=lambda: bimatrix.from_file(FIXTURES_DIR / "infinite_equilibria_degenerate_1"),
         ),
         id="infinite_equilibria_degenerate_1",
     ),
 
     pytest.param(
         GameTestCase(
-            factory=lambda: bimatrix(FIXTURES_DIR / "infinite_equilibria_degenerate_2"),
+            factory=lambda: bimatrix.from_file(FIXTURES_DIR / "infinite_equilibria_degenerate_2"),
         ),
         id="infinite_equilibria_degenerate_2",
     ),
@@ -187,7 +202,8 @@ INFINITE_NE_CASES = [
 
 SOLVERS = [
     pytest.param(lh_solver, id="LH"),
-    pytest.param(tracing_solver, id="tracing"),
+    pytest.param(trace_uniform_prior, id="trace_uniform"),
+    pytest.param(partial(trace_random_priors, trace=10, seed=0), id="trace_random"),
 ]
 
 

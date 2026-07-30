@@ -20,12 +20,11 @@ def lcp_from_data(M: list[list[Fr]], q: list[Fr], d: list[Fr]) -> lcp:
     if any(len(row) != n for row in M):
         raise ValueError("M must be a square matrix")
 
-    lcp_instance = lcp(n)
-    lcp_instance.M = [[Fr(x) for x in row] for row in M]
-    lcp_instance.q = [Fr(x) for x in q]
-    lcp_instance.d = [Fr(x) for x in d]
+    M = [[Fr(x) for x in row] for row in M]
+    q = [Fr(x) for x in q]
+    d = [Fr(x) for x in d]
 
-    return lcp_instance
+    return lcp(M, q, d)
 
 
 def build_sequence_form_lcp(game):
