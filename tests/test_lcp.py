@@ -44,7 +44,7 @@ class LCPTestCase:
 TRIVIAL_CASES = [
     pytest.param(
         LCPTestCase(
-            factory=lambda: lcp(FIXTURES_DIR / "trivial_q_pos_M_arbitrary"),
+            factory=lambda: lcp.from_file(FIXTURES_DIR / "trivial_q_pos_M_arbitrary"),
             expected=[Fr(0), Fr(0), Fr(0), Fr(3), Fr(1)],
         ),
         id="trivial_q_pos_M_arbitrary",
@@ -52,7 +52,7 @@ TRIVIAL_CASES = [
 
     pytest.param(
         LCPTestCase(
-            factory=lambda: lcp(FIXTURES_DIR / "trivial_q_zero_M_identity"),
+            factory=lambda: lcp.from_file(FIXTURES_DIR / "trivial_q_zero_M_identity"),
             expected=[Fr(0), Fr(0), Fr(0), Fr(0), Fr(0)],
         ),
         id="trivial_q_zero_M_identity",
@@ -60,7 +60,7 @@ TRIVIAL_CASES = [
 
     pytest.param(
         LCPTestCase(
-            factory=lambda: lcp(FIXTURES_DIR / "trivial_q_zero_M_zero"),
+            factory=lambda: lcp.from_file(FIXTURES_DIR / "trivial_q_zero_M_zero"),
             expected=[Fr(0), Fr(0), Fr(0), Fr(0), Fr(0)],
         ),
         id="trivial_q_zero_M_zero",
@@ -74,7 +74,7 @@ NON_DEGENERATE_CASES = [
     # example 4.3.3 (Cottle, Pang, Stone)
     pytest.param(
         LCPTestCase(
-            factory=lambda: lcp(FIXTURES_DIR / "non_degenerate_book_ex_3x3"),
+            factory=lambda: lcp.from_file(FIXTURES_DIR / "non_degenerate_book_ex_3x3"),
             expected=[Fr(0), Fr(0), Fr(1), Fr(3), Fr(2), Fr(0), Fr(0)],
         ),
         id="non_degenerate_book_ex_3x3",
@@ -83,7 +83,7 @@ NON_DEGENERATE_CASES = [
     # example 4.4.17 (Cottle, Pang, Stone)
     pytest.param(
         LCPTestCase(
-            factory=lambda: lcp(FIXTURES_DIR / "non_degenerate_book_ex_4x4"),
+            factory=lambda: lcp.from_file(FIXTURES_DIR / "non_degenerate_book_ex_4x4"),
             expected=[Fr(0), Fr(0), Fr(1, 2), Fr(0), Fr(0), Fr(1, 2), Fr(0), Fr(11, 2), Fr(4)],
         ),
         id="non_degenerate_book_ex_4x4",
@@ -93,7 +93,7 @@ NON_DEGENERATE_CASES = [
     # There is a unique solution: z = -q/M
     pytest.param(
         LCPTestCase(
-            factory=lambda: lcp(FIXTURES_DIR / "non_degenerate_1x1"),
+            factory=lambda: lcp.from_file(FIXTURES_DIR / "non_degenerate_1x1"),
             expected=[Fr(0), Fr(329, 20), Fr(0)],
         ),
         id="non_degenerate_1x1",
@@ -101,7 +101,7 @@ NON_DEGENERATE_CASES = [
 
     pytest.param(
         LCPTestCase(
-            factory=lambda: lcp(FIXTURES_DIR / "non_degenerate_2x2"),
+            factory=lambda: lcp.from_file(FIXTURES_DIR / "non_degenerate_2x2"),
             expected=[Fr(0), Fr(2), Fr(1), Fr(0), Fr(0)],
         ),
         id="non_degenerate_2x2",
@@ -111,7 +111,7 @@ NON_DEGENERATE_CASES = [
     # There is a unique solution: z[i] = max(0, -q[i]), w[i] = max(0, q[i])
     pytest.param(
         LCPTestCase(
-            factory=lambda: lcp(FIXTURES_DIR / "non_degenerate_M_identity"),
+            factory=lambda: lcp.from_file(FIXTURES_DIR / "non_degenerate_M_identity"),
             expected=[Fr(0), Fr(51, 10), Fr(0), Fr(0), Fr(8), Fr(0), Fr(2, 7), Fr(10), Fr(0)],
         ),
         id="non_degenerate_M_identity",
@@ -126,7 +126,7 @@ DEGENERATE_CASES = [
     # page 141 in Cottle, Pang, Stone (1992)
     pytest.param(
         LCPTestCase(
-            factory=lambda: lcp(FIXTURES_DIR / "degenerate_tie_in_initial_lexmin"),
+            factory=lambda: lcp.from_file(FIXTURES_DIR / "degenerate_tie_in_initial_lexmin"),
             expected=[Fr(0), Fr(0), Fr(1), Fr(0), Fr(0)],
         ),
         id="degenerate_tie_in_initial_lexmin",
@@ -134,7 +134,7 @@ DEGENERATE_CASES = [
 
     pytest.param(
         LCPTestCase(
-            factory=lambda: lcp(FIXTURES_DIR / "degenerate_tie_in_noninitial_lexmin"),
+            factory=lambda: lcp.from_file(FIXTURES_DIR / "degenerate_tie_in_noninitial_lexmin"),
             expected=[Fr(0), Fr(0), Fr(1), Fr(0), Fr(0)],
         ),
         id="degenerate_tie_in_noninitial_lexmin",
@@ -142,7 +142,7 @@ DEGENERATE_CASES = [
 
     pytest.param(
         LCPTestCase(
-            factory=lambda: lcp(FIXTURES_DIR / "degenerate_tie_in_several_lexmins"),
+            factory=lambda: lcp.from_file(FIXTURES_DIR / "degenerate_tie_in_several_lexmins"),
             expected=[Fr(0), Fr(0), Fr(1), Fr(0), Fr(1), Fr(0), Fr(0)],
         ),
         id="degenerate_tie_in_several_lexmins",
@@ -225,14 +225,14 @@ FAILURE_CASES = [
     # M = 0, q < 0
     pytest.param(
         LCPTestCase(
-            factory=lambda: lcp(FIXTURES_DIR / "failure_after_first_pivot"),
+            factory=lambda: lcp.from_file(FIXTURES_DIR / "failure_after_first_pivot"),
         ),
         id="failure_after_first_pivot",
     ),
 
     pytest.param(
         LCPTestCase(
-            factory=lambda: lcp(FIXTURES_DIR / "failure_after_several_pivots"),
+            factory=lambda: lcp.from_file(FIXTURES_DIR / "failure_after_several_pivots"),
         ),
         id="failure_after_several_pivots",
     ),

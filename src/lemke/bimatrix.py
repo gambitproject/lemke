@@ -43,16 +43,6 @@ def rangesplit(s, endrange=50):
 
 # used for both A and B
 class payoffmatrix:
-    # create zero matrix of given dimensions
-    # def __init__(self, m, n):
-    #    self.numrows = m
-    #    self.numcolumns = n
-    #    self.matrix = np.zeros( (m,n), dtype=fractions.Fraction)
-    #    self.negmatrix = np.zeros( (m,n), dtype=fractions.Fraction)
-    #    self.max = 0
-    #    self.min = 0
-    #    self.negshift = 0
-
     # create matrix from any numerical matrix
     def __init__(self, A):
         AA = np.array(A)
@@ -105,13 +95,13 @@ class payoffmatrix:
 
 
 class bimatrix:
-    # create A,B given m,n
-    # def __init__(self, m, n):
-    #    self.A = payoffmatrix(m,n)
-    #    self.B = payoffmatrix(m,n)
+    def __init__(self, A, B):
+        self.A = A
+        self.B = B
 
     # create A,B from file
-    def __init__(self, filename):
+    @classmethod
+    def from_file(cls, filename):
         lines = utils.stripcomments(filename)
         # flatten into words
         words = utils.towords(lines)
@@ -124,10 +114,11 @@ class bimatrix:
             exit(1)
         k = 2
         C = utils.tomatrix(m, n, words, k)
-        self.A = payoffmatrix(C)
+        A = payoffmatrix(C)
         k += m * n
         C = utils.tomatrix(m, n, words, k)
-        self.B = payoffmatrix(C)
+        B = payoffmatrix(C)
+        return cls(A, B)
 
     def __str__(self):
         out = "# m,n= \n" + str(self.A.numrows)
@@ -140,25 +131,28 @@ class bimatrix:
         m = self.A.numrows
         n = self.A.numcolumns
         lcpdim = m + n + 2
-        lcp = lemke.lcp(lcpdim)
-        lcp.q[lcpdim - 2] = -1
-        lcp.q[lcpdim - 1] = -1
+
+        q = [0 for _ in range(lcpdim)]
+        M = [[0] * lcpdim for _ in range(lcpdim)]
+
+        q[lcpdim - 2] = -1
+        q[lcpdim - 1] = -1
+
         for i in range(m):
-            lcp.M[lcpdim - 2][i] = 1
-            lcp.M[i][lcpdim - 2] = -1
+            M[lcpdim - 2][i] = 1
+            M[i][lcpdim - 2] = -1
         for j in range(m, m + n):
-            lcp.M[lcpdim - 1][j] = 1
-            lcp.M[j][lcpdim - 1] = -1
+            M[lcpdim - 1][j] = 1
+            M[j][lcpdim - 1] = -1
         for i in range(m):
             for j in range(n):
-                lcp.M[i][j + m] = self.A.negmatrix[i][j]
+                M[i][j + m] = self.A.negmatrix[i][j]
         for j in range(n):
             for i in range(m):
-                lcp.M[j + m][i] = self.B.negmatrix[i][j]
+                M[j + m][i] = self.B.negmatrix[i][j]
         # d for now
-        for i in range(lcpdim):
-            lcp.d[i] = 1
-        return lcp
+        d = [1 for _ in range(lcpdim)]
+        return lemke.lcp(M, q, d)
 
     def runLH(self, droppedlabel):
         lcp = self.createLCP()
@@ -332,7 +326,7 @@ def common_options(f):
 def lh(filename, labels):
     """Find equilibria using the Lemke-Howson algorithm."""
 
-    G = bimatrix(filename)
+    G = bimatrix.from_file(filename)
     G.LH(labels)
 
 
@@ -347,7 +341,7 @@ def trace():
 def trace_uniform_cmd(filename):
     """Trace using a uniform prior."""
 
-    G = bimatrix(filename)
+    G = bimatrix.from_file(filename)
     G.trace_uniform_prior()
 
 
@@ -377,5 +371,5 @@ def trace_uniform_cmd(filename):
 def trace_random_cmd(filename, priors, seed, accuracy):
     """Trace using random prior(s)."""
 
-    G = bimatrix(filename)
+    G = bimatrix.from_file(filename)
     G.trace_random_priors(priors, seed, accuracy)
