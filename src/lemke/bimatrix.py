@@ -2,21 +2,14 @@
 
 import fractions
 import random  # random.seed
-import sys
+from functools import wraps
 
+import click
 import numpy as np
 
 from . import columnprint, lemke, randomstart, utils
-
-
-# for debugging
-def printglobals():
-    globs = [x for x in globals() if "__" not in x]
-    for var in globs:
-        value = str(globals()[var])
-        if "<" not in value:
-            print("    " + str(var) + "=", value)
-
+from .randomstart import MAX_ACCURACY
+from .utils import MAXDECIMALS
 
 # file format:
 # <m> <n>
@@ -27,87 +20,6 @@ def printglobals():
 
 # defaults
 # MAXDIM = 2000 # largest allowed value for m and n; not used yet
-gamefilename = "game"
-gz0 = False
-LHstring = ""  # empty means LH not called
-seed = -1
-trace = -1  # negative: no tracing
-# accuracy = DEFAULT_accuracy = 1000
-accuracy = 1000
-
-
-# amends defaults
-def processArguments():
-    global gamefilename, gz0, LHstring, seed, trace, accuracy
-    arglist = sys.argv[1:]
-    setLH = False
-    settrace = False
-    setaccuracy = False
-    setseed = False
-    setdecimals = False
-    showhelp = False
-    for s in arglist:
-        if s[0] == "-":
-            # discard optional argument-parameters
-            if setLH or settrace or setseed:
-                setLH = settrace = setseed = False
-            if s == "-LH":
-                setLH = True
-                LHstring = "1-"
-            elif s == "-trace":
-                settrace = True
-                trace = 0
-            elif s == "-seed":
-                setseed = True
-                seed = 0
-            elif s == "-accuracy":
-                setaccuracy = True
-            elif s == "-decimals":
-                setdecimals = True
-            elif s == "-z0":
-                gz0 = True
-            elif s == "-?" or s == "-help":
-                showhelp = True
-            else:  # any other "-" argument
-                showhelp = True
-                print("! unknown option: ", repr(s))
-        else:  # s not starting with "-"
-            if setLH:
-                setLH = False
-                LHstring = s
-            elif settrace:
-                settrace = False
-                trace = int(s)
-            elif setseed:
-                setseed = False
-                seed = int(s)
-            elif setdecimals:
-                setdecimals = False
-                utils.setdecimals(int(s))
-            elif setaccuracy:
-                setaccuracy = False
-                accuracy = int(s)
-            else:
-                gamefilename = s
-    if showhelp:
-        helpstring = (
-            """usage: bimatrix.py [options]
-options:
-    <filename>      here: """
-            + repr(gamefilename)
-            + """, must not start with '-'
-    -LH [<range>] : Lemke-Howson with missing labels, e.g. '1,3-5,7-' ('' = all)
-    -trace [<num>]: tracing procedure, <num> no. of priors, 0 = centroid
-    -seed [<num>] : random seed, default: None
-    -accuracy <n> : accuracy prior, <n>=denominator, here """
-            + str(accuracy)
-            + """
-    -decimals <d> : allowed payoff digits in input after decimal point, default 4
-    -?, -help:      show this help and exit"""
-        )
-        print(helpstring)
-        exit(0)
-    return
 
 
 # list generated from string s such as "1-3,10,4-7", all not
@@ -251,8 +163,6 @@ class bimatrix:
         return tuple(getequil(tabl))
 
     def LH(self, LHstring):
-        if LHstring == "":
-            return
         m = self.A.numrows
         n = self.A.numcolumns
         lhset = {}  # dict of equilibria and list by which label found
@@ -278,37 +188,51 @@ class bimatrix:
         tabl.runlemke()
         return tuple(getequil(tabl))
 
-    def tracing(self, trace):
-        if trace < 0:
-            return
+    def trace_uniform_prior(self):
+        m = self.A.numrows
+        n = self.A.numcolumns
+
+        xprior = uniform(m)
+        yprior = uniform(n)
+        eq = self.runtrace(xprior, yprior)
+
+        self._print_trace_results(
+            equilibria={eq: 1},
+            total_priors=1,
+        )
+
+    def trace_random_priors(self, trace, seed=None, accuracy=1000):
+        if trace <= 0:
+            raise ValueError("Number of priors must be a positive integer")
         m = self.A.numrows
         n = self.A.numcolumns
         trset = {}  # dict of equilibria, how often found
-        if trace == 0:
-            xprior = uniform(m)
-            yprior = uniform(n)
+
+        for k in range(trace):
+            if seed is not None:
+                random.seed(10 * trace * seed + k)
+            x = randomstart.randInSimplex(m)
+            xprior = randomstart.roundArray(x, accuracy)
+            y = randomstart.randInSimplex(n)
+            yprior = randomstart.roundArray(y, accuracy)
+            # print (f"{k=} {xprior=} {yprior=}")
             eq = self.runtrace(xprior, yprior)
-            trset[eq] = 1
-            trace = 1  # for percentage
-        else:
-            for k in range(trace):
-                if seed >= 0:
-                    random.seed(10 * trace * seed + k)
-                x = randomstart.randInSimplex(m)
-                xprior = randomstart.roundArray(x, accuracy)
-                y = randomstart.randInSimplex(n)
-                yprior = randomstart.roundArray(y, accuracy)
-                # print (f"{k=} {xprior=} {yprior=}")
-                eq = self.runtrace(xprior, yprior)
-                if eq in trset:
-                    trset[eq] += 1
-                else:
-                    print("found eq", str_eq(eq, m, n), "index", self.eqindex(eq, m, n))
-                    trset[eq] = 1
+            if eq in trset:
+                trset[eq] += 1
+            else:
+                print("found eq", str_eq(eq, m, n), "index", self.eqindex(eq, m, n))
+                trset[eq] = 1
+
+        self._print_trace_results(trset, trace)
+
+    def _print_trace_results(self, equilibria, total_priors):
+        m = self.A.numrows
+        n = self.A.numcolumns
+
         print("-------- statistics of equilibria found: --------")
-        for eq in trset:
-            print(trset[eq], "times found ", str_eq(eq, m, n))
-        print(trace, "total priors,", len(trset), "equilibria found")
+        for eq, count in equilibria.items():
+            print(count, "times found", str_eq(eq, m, n))
+        print(total_priors, "total priors,", len(equilibria), "equilibria found")
 
     def eqindex(self, eq, m, n):
         rowset, colset = supports(eq, m, n)
@@ -358,15 +282,94 @@ def submatrix(A, rowset, colset):
     return B
 
 
+@click.group(
+    context_settings={"help_option_names": ["-?", "-h", "--help"]},
+)
 def main():
-    processArguments()
-    printglobals()
-
-    G = bimatrix.from_file(gamefilename)
-    print(G)
-    G.LH(LHstring)
-    G.tracing(trace)
+    """Find Nash equilibria of a bimatrix game."""
+    pass
 
 
-if __name__ == "__main__":
-    main()
+def common_options(f):
+    @click.argument(
+        "filename",
+        type=click.Path(exists=True, readable=True, file_okay=True, dir_okay=False),
+    )
+    @click.option(
+        "--decimals",
+        default=4,
+        show_default=True,
+        type=click.IntRange(min=0, max=MAXDECIMALS),
+        metavar="INTEGER",
+        help="Allowed payoff digits in input after decimal point",
+    )
+    # @click.option(
+    #     "--z0",
+    #     is_flag=True,
+    #     help="Show value of z0 at each step",
+    # )
+    @wraps(f)
+    def wrapper(*args, decimals, **kwargs):
+        utils.setdecimals(decimals)
+        return f(*args, **kwargs)
+    return wrapper
+
+
+@main.command()
+@common_options
+@click.option(
+    "--labels",
+    default="1-",
+    help="Missing labels, e.g. 1,3-5,7-  "
+         "[default: all labels]",
+)
+def lh(filename, labels):
+    """Find equilibria using the Lemke-Howson algorithm."""
+
+    G = bimatrix.from_file(filename)
+    G.LH(labels)
+
+
+@main.group()
+def trace():
+    """Find equilibria using the tracing procedure."""
+    pass
+
+
+@trace.command(name="uniform")
+@common_options
+def trace_uniform_cmd(filename):
+    """Trace using a uniform prior."""
+
+    G = bimatrix.from_file(filename)
+    G.trace_uniform_prior()
+
+
+@trace.command(name="random")
+@common_options
+@click.option(
+    "--priors",
+    default=1,
+    show_default=True,
+    type=click.IntRange(min=1),
+    metavar="INTEGER",
+    help="Number of random priors",
+)
+@click.option(
+    "--seed",
+    type=int,
+    help="Random seed",
+)
+@click.option(
+    "--accuracy",
+    default=1000,
+    show_default=True,
+    type=click.IntRange(1, MAX_ACCURACY),
+    metavar="INTEGER",
+    help="Denominator x: each coordinate of the prior is rounded to the nearest 1/x",
+)
+def trace_random_cmd(filename, priors, seed, accuracy):
+    """Trace using random prior(s)."""
+
+    G = bimatrix.from_file(filename)
+    G.trace_random_priors(priors, seed, accuracy)
