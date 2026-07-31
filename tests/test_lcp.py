@@ -235,7 +235,7 @@ FAILURE_CASES = [
 def test_failure(test_case: LCPTestCase):
     """
     Test the Lemke solver on LCPs that terminate on a secondary ray
-    by verifying that it raises SystemExit with code 1.
+    by verifying that it returns None.
     """
     lcp_instance = test_case.factory()
 
