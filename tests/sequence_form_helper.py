@@ -1,8 +1,7 @@
 from collections import defaultdict
 from fractions import Fraction as Fr
 
-from lemke.lemke import lcp
-from tests.test_lcp import lemke_solver
+from lemke.lemke import lcp, runlemke
 
 EMPTY: tuple[()] = ()  # empty sequence
 
@@ -224,7 +223,7 @@ def solve_via_sequence_form(game):
     d = [Fr(1) for _ in range(len(q))]
 
     lcp_instance = lcp_from_data(M, q, d)
-    sol = lemke_solver(lcp_instance)
+    sol = runlemke(lcp=lcp_instance)
 
     # realization plans
     x_y = sol[1:(ns1 + ns2 + 1)]

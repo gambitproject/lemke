@@ -4,6 +4,7 @@ import pytest
 from click.testing import CliRunner
 
 from lemke.lemke import (
+    RayTermination,
     lcp,
     main,
     tableau,
@@ -44,10 +45,8 @@ def test_lcp_invalid_file(tmp_path, content):
     file_path = tmp_path / "lcp"
     file_path.write_text(content)
 
-    with pytest.raises(SystemExit) as exc_info:
+    with pytest.raises(ValueError):
         lcp.from_file(str(file_path))
-
-    assert exc_info.value.code == 1
 
 
 # ---   TABLEAU INIT   ----------------------------------------------
@@ -98,7 +97,7 @@ def test_complement_pairs(i):
 
 def test_complement_z0_fails():
     t = tableau(get_empty_lcp(2))
-    with pytest.raises(SystemExit):
+    with pytest.raises(RuntimeError):
         t.complement(0)
 
 
@@ -133,10 +132,8 @@ def test_lexminvar_without_positive_entry():
 
     enter = 0  # z0, cobasic in col 0
 
-    with pytest.raises(SystemExit) as exc_info:
+    with pytest.raises(RayTermination):
         t.lexminvar(enter)
-
-    assert exc_info.value.code == 1
 
 
 @pytest.mark.parametrize(
@@ -163,7 +160,7 @@ def test_lexminvar_with_positive_entry(row0, row1):
     [],
     ["--verbose", "--z0"],
 ])
-def test_cli_runs_without_error(tmp_path, extra_args):
+def test_exit_code_0_on_success(tmp_path, extra_args):
     file_path = tmp_path / "test.lcp"
     file_path.write_text("n= 2\nM= 1 0 0 1\nq= 1 1\nd= 1 1\n")
 
@@ -171,6 +168,16 @@ def test_cli_runs_without_error(tmp_path, extra_args):
     result = runner.invoke(main, [str(file_path)] + extra_args)
 
     assert result.exit_code == 0
+
+
+def test_exit_code_1_on_ray_termination(tmp_path):
+    file_path = tmp_path / "test.lcp"
+    file_path.write_text("n= 2\nM= -1 0 0 -1\nq= -1 -1\nd= 1 1\n")
+
+    runner = CliRunner()
+    result = runner.invoke(main, [str(file_path)])
+
+    assert result.exit_code == 1
 
 
 def test_cli_rejects_missing_file(tmp_path):

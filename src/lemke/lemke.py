@@ -24,18 +24,19 @@ class lcp:
         # flatten into words
         words = utils.towords(lines)
         if words[0] != "n=":
-            print("lcp file", repr(filename),
-                  "must start with 'n=' lcpdim, e.g. 'n= 5', not",
-                  repr(words[0]))
-            exit(1)
+            raise ValueError(
+                f"lcp file {filename!r} must start with 'n=' lcpdim, e.g. 'n= 5', "
+                f"not {words[0]!r}"
+            )
         n = int(words[1])
         needfracs = n * n + 2 * n
         if len(words) != needfracs + 5:
             # printout("in lcp file '",filename,"':")
-            print("in lcp file " + repr(filename) + ":")
-            print("n=", n, ", need keywords 'M=' 'q=' 'd=' and n*n + n + n =",
-                  needfracs, "fractions, got", len(words) - 5)
-            exit(1)
+            raise ValueError(
+                f"in lcp file {filename!r}: "
+                f"n={n}, need keywords 'M=' 'q=' 'd=' and "
+                f"n*n + n + n = {needfracs} fractions, got {len(words) - 5}"
+            )
         M, q, d = None, None, None
         k = 2  # index in words
         while k < len(words):
@@ -52,9 +53,10 @@ class lcp:
                 d = utils.tovector(n, words, k)
                 k += n
             else:
-                print("in lcp file " + repr(filename) + ":")
-                print("expected one of 'M=' 'q=' 'd=', got", repr(words[k]))
-                exit(1)
+                raise ValueError(
+                    f"in lcp file {filename!r}: expected one of 'M=' 'q=' 'd=', "
+                    f"got {words[k]!r}"
+                )
         return cls(M, q, d)
 
     def __str__(self):
@@ -85,7 +87,6 @@ class lcp:
 class tableau:
     # filling the tableau from the LCP instance Mqd
     def __init__(self, Mqd):
-        self.output_stream = None
         self.n = Mqd.n
         n = self.n
         self.scalefactor = [0] * (n + 2)  # 0 for z0, n+1 for RHS
@@ -190,106 +191,41 @@ class tableau:
             else:  # i is nonbasic
                 self.solution[i] = fractions.Fraction(0)
 
-    def outsol(self):  # string giving solution, after createsol()
-        # printout in columns to check complementarity
-        n = self.n
-        sol = columnprint.columnprint(n + 2)
-        sol.sprint("basis=")
-        for i in range(n + 1):
-            if self.bascobas[i] < n:  # Z(i) is a basic variable
-                s = self.vartoa(i)
-            elif i > 0 and self.bascobas[n + i] < n:  # W(i) is a basic variable
-                s = self.vartoa(n + i)
-            else:
-                s = "  "
-            sol.sprint(s)
-        sol.sprint("z=")
-        for i in range(2 * n + 1):
-            sol.sprint(str(self.solution[i]))
-            if i == n:  # new line since printouting slack vars  w  next
-                sol.sprint("w=")
-                sol.sprint("")  # no W(0)
-        return str(sol)
-
     def assertbasic(self, v, info):  # assert that v is basic
         if self.bascobas[v] >= self.n:
-            self.printout(info, "Cobasic variable", self.vartoa(v),
-                          "should be basic")
-            exit(1)
-        return
+            raise RuntimeError(
+                f"({info}) Cobasic variable {self.vartoa(v)} should be basic"
+            )
 
     def assertcobasic(self, v, info):  # assert that v is cobasic
         if self.bascobas[v] < self.n:
-            self.printout(info, "Cobasic variable", self.vartoa(v),
-                          "should be cobasic")
-            exit(1)
-        return
+            raise RuntimeError(
+                f"({info}) Basic variable {self.vartoa(v)} should be cobasic"
+            )
 
-    def docupivot(self, leave, enter):  # leave, enter in VARS
-        self.assertbasic(leave, "docupivot")
-        self.assertcobasic(enter, "docupivot")
-        s = "leaving: " + self.vartoa(leave).ljust(5)
-        s += "entering: " + self.vartoa(enter)
-        self.printout(s)
-        return
-
-    def raytermination(self, enter):
-        self.printout("Ray termination when trying to enter", self.vartoa(enter))
-        self.printout(self)
-        self.printout("Current basis not an LCP solution:")
-        self.createsol()
-        self.printout(self.outsol())
-        exit(1)
-
-    def testtablvars(self):  # msg only if error, continue
+    def testtablvars(self):
         n = self.n
         for i in range(2 * n + 1):
             if self.bascobas[self.whichvar[i]] != i:
+                message = ""
                 # injective suffices
                 for j in range(2 * n + 1):
                     if j == i:
-                        self.printout("First problem for j=", j, ":")
-                    # printout (f"{j=} {self.bascobas[j]=} {self.whichvar[j]=}")
-                    self.printout(
+                        message += f"First problem for j={j}:\n"
+                    message += (
                         f"j={j} self.bascobas[j]={self.bascobas[j]} "
-                        f"self.whichvar[j]={self.whichvar[j]}"
+                        f"self.whichvar[j]={self.whichvar[j]}\n"
                     )
-                break
+                raise RuntimeError(f"testtablvars() failed:\n{message}")
 
     def complement(self, v):  # Z(i),W(i) are complements
         n = self.n
         if v == 0:
-            self.printout("Attempt to find complement of z0")
-            exit(1)
+            raise RuntimeError("Attempt to find complement of z0")
         if v > n:
             return v - n
         else:
             return v + n
-
-    # output statistics of minimum ratio test
-    def outstatistics(self):
-        n = self.n
-        lext = self.lextested
-        stats = columnprint.columnprint(n + 2)
-        stats.makeLeft(0)
-        stats.sprint("lex-column")
-        for i in range(n + 1):
-            stats.iprint(i)
-        stats.sprint("times tested")
-        for i in range(n + 1):
-            stats.iprint(lext[i])
-        if lext[0] > 0:  # otherwise never a degeneracy
-            stats.sprint("% of pivots")
-            for i in range(0, n + 1):
-                stats.iprint(round(lext[i] * 100 / self.pivotcount))
-            stats.sprint("avg comparisons")
-            for i in range(n + 1):
-                if lext[i] > 0:
-                    x = round(self.lexcomparisons[i] * 10 / lext[0])
-                    stats.sprint(str(x / 10.0))
-                else:
-                    stats.sprint("-")
-        self.printout(stats)
 
     # returns leave,z0leave
     # leave = leaving variable in VARS, given by lexmin row,
@@ -308,7 +244,7 @@ class tableau:
             if A[i][col] > 0:
                 leavecand.append(i)
         if not leavecand:
-            self.raytermination(enter)
+            raise RayTermination(enter, self)
         if len(leavecand) == 1:  # single positive entering value
             z0leave = self.bascobas[0] == leavecand[0]
         # omitted from statistics: only one possible row
@@ -324,8 +260,7 @@ class tableau:
         j = 0  # going through j = 0..n
         while len(leavecand) > 1:
             if j > n:  # impossible, perturbed RHS should have full rank
-                self.printout("lex-minratio test failed")
-                exit(1)
+                raise RuntimeError("lex-minratio test failed")
             self.lextested[j] += 1
             self.lexcomparisons[j] += len(leavecand)
             testcol = n + 1 if j == 0 else self.bascobas[n + j] - n
@@ -415,79 +350,197 @@ class tableau:
 
     # end of  pivot (leave, enter)
 
-    def printout(self, *s):
-        if self.output_stream is None:
-            return
-        print(*s, file=self.output_stream)
+    #  end of class tableau
 
-    def runlemke(
+
+class RayTermination(Exception):
+    def __init__(self, enter, tableau):
+        tableau.createsol()
+        self.tableau = tableau
+        super().__init__(
+            "Ray termination when trying to enter " + tableau.vartoa(enter)
+        )
+
+
+def outsol(tableau):  # string giving solution, after createsol()
+    # printout in columns to check complementarity
+    n = tableau.n
+    sol = columnprint.columnprint(n + 2)
+    sol.sprint("basis=")
+    for i in range(n + 1):
+        if tableau.bascobas[i] < n:  # Z(i) is a basic variable
+            s = tableau.vartoa(i)
+        elif i > 0 and tableau.bascobas[n + i] < n:  # W(i) is a basic variable
+            s = tableau.vartoa(n + i)
+        else:
+            s = "  "
+        sol.sprint(s)
+    sol.sprint("z=")
+    for i in range(2 * n + 1):
+        sol.sprint(str(tableau.solution[i]))
+        if i == n:  # new line since printouting slack vars  w  next
+            sol.sprint("w=")
+            sol.sprint("")  # no W(0)
+    return str(sol)
+
+
+# output statistics of minimum ratio test
+def outstatistics(tableau):
+    n = tableau.n
+    lext = tableau.lextested
+    stats = columnprint.columnprint(n + 2)
+    stats.makeLeft(0)
+    stats.sprint("lex-column")
+    for i in range(n + 1):
+        stats.iprint(i)
+    stats.sprint("times tested")
+    for i in range(n + 1):
+        stats.iprint(lext[i])
+    if lext[0] > 0:  # otherwise never a degeneracy
+        stats.sprint("% of pivots")
+        for i in range(0, n + 1):
+            stats.iprint(round(lext[i] * 100 / tableau.pivotcount))
+        stats.sprint("avg comparisons")
+        for i in range(n + 1):
+            if lext[i] > 0:
+                x = round(tableau.lexcomparisons[i] * 10 / lext[0])
+                stats.sprint(str(x / 10.0))
+            else:
+                stats.sprint("-")
+    return stats
+
+
+class LemkeCallback:
+    def on_start(self, lcp, tableau): pass
+    def on_negcol(self, tableau): pass
+    def on_pivot_start(self, tableau, leave, enter): pass
+    def on_pivot_end(self, tableau): pass
+    def on_done(self, tableau): pass
+    def on_ray_termination(self, tableau, message): pass
+
+
+class PrintingCallback(LemkeCallback):
+    # z0: printout value of z0
+    # flags.maxcount   = 0;
+    # flags.bdocupivot = 1;
+    # flags.binitabl   = 1;
+    # flags.bouttabl   = 0;  (= verbose)
+    # flags.boutsol    = 1;
+    # flags.binteract  = 0;
+    # flags.blexstats  = 0;
+
+    def __init__(
         self,
-        *,
+        stream=sys.stdout,
         verbose=False,
-        lexstats=False,
         z0=False,
-        output_stream=None,
+        lexstats=False,
     ):
-        # z0: printout value of z0
-        # flags.maxcount   = 0;
-        # flags.bdocupivot = 1;
-        # flags.binitabl   = 1;
-        # flags.bouttabl   = 0;  (= verbose)
-        # flags.boutsol    = 1;
-        # flags.binteract  = 0;
-        # flags.blexstats  = 0;
+        self.stream = stream
+        self.verbose = verbose
+        self.z0 = z0
+        self.lexstats = lexstats
 
-        self.output_stream = output_stream
+    def printout(self, *args):
+        print(*args, file=self.stream)
 
-        n = self.n
-        self.pivotcount = 1
-        # check if d is ok - TBC
+    def on_start(self, lcp, tableau):
+        self.printout(f"verbose={self.verbose} z0={self.z0} lexstats={self.lexstats}")
+        self.printout(lcp)
+        self.printout("==================================")
+
         # if (flags.binitabl)
         self.printout("After filltableau:")
-        self.printout(self)
+        self.printout(tableau)
 
-        # z0 enters the basis to obtain lex-feasible solution
-        enter = 0
-        leave, z0leave = self.lexminvar(enter)
-        # negate RHS
-        self.negcol(n + 1)
+    def on_negcol(self, tableau):
         # if (flags.binitabl)
-        if verbose:
+        if self.verbose:
             self.printout("After negcol:")
-            self.printout(self)
+            self.printout(tableau)
 
-        while True:  # main loop of complementary pivoting
-            self.testtablvars()
-            if z0:  # printout progress of z0
-                if self.bascobas[0] < n:  # z0 is basic
-                    self.printout(
-                        "step,z0=",
-                        self.pivotcount, self.A[self.bascobas[0]][n + 1] / self.determinant
-                    )
-                else:
-                    self.printout("step,z0=", self.pivotcount, 0.0)
-            # if (flags.bdocupivot)
-            self.docupivot(leave, enter)
-            self.pivot(leave, enter)
-            if z0leave:
-                if z0:
-                    self.printout("step,z0=", self.pivotcount + 1, 0.0)
-                break
-            if verbose:
-                self.printout(self)
-            enter = self.complement(leave)
-            leave, z0leave = self.lexminvar(enter)
-            self.pivotcount += 1
+    def on_pivot_start(self, tableau, leave, enter):
+        if self.z0:  # printout progress of z0
+            z0_value = 0.0
+            if tableau.bascobas[0] < tableau.n:  # z0 is basic
+                z0_value = tableau.A[tableau.bascobas[0]][tableau.n + 1] / tableau.determinant
+            self.printout(f"pivot count = {tableau.pivotcount}, z0 = {z0_value}")
+
+        # if (flags.bdocupivot)
+        self.printout(f"leaving: {leave.ljust(5)} entering: {enter}")
+
+    def on_pivot_end(self, tableau):
+        if self.verbose:
+            self.printout(tableau)
+
+    def on_done(self, tableau):
+        if self.z0:
+            self.printout(f"pivot count = {tableau.pivotcount + 1}, z0 = 0.0")
 
         # if (flags.binitabl)
         self.printout("Final tableau:")
-        self.printout(self)
+        self.printout(tableau)
+
         # if (flags.boutsol)
-        self.createsol()
-        self.printout(self.outsol())
-        if lexstats:
-            self.outstatistics()
-    #  end of class tableau
+        self.printout(outsol(tableau))
+
+        if self.lexstats:
+            # output statistics of minimum ratio test
+            self.printout(outstatistics(tableau))
+
+    def on_ray_termination(self, tableau, message):
+        self.printout(message)
+        self.printout(tableau)
+        self.printout("Current basis not an LCP solution:")
+        self.printout(outsol(tableau))
+
+
+def runlemke(*, lcp, callback=None):
+    callback = callback or LemkeCallback()
+
+    try:
+        tabl = tableau(lcp)
+
+        n = tabl.n
+        tabl.pivotcount = 1
+        # check if d is ok - TBC
+        # if (flags.binitabl)
+        callback.on_start(lcp=lcp, tableau=tabl)
+
+        # z0 enters the basis to obtain lex-feasible solution
+        enter = 0
+        leave, z0leave = tabl.lexminvar(enter)
+        # negate RHS
+        tabl.negcol(n + 1)
+        callback.on_negcol(tableau=tabl)
+
+        while True:  # main loop of complementary pivoting
+            tabl.testtablvars()
+            tabl.assertbasic(leave, "docupivot")
+            tabl.assertcobasic(enter, "docupivot")
+
+            callback.on_pivot_start(
+                tableau=tabl,
+                leave=tabl.vartoa(leave),
+                enter=tabl.vartoa(enter),
+            )
+            tabl.pivot(leave, enter)
+            if z0leave:
+                break
+
+            callback.on_pivot_end(tableau=tabl)
+
+            enter = tabl.complement(leave)
+            leave, z0leave = tabl.lexminvar(enter)
+            tabl.pivotcount += 1
+
+        tabl.createsol()
+        callback.on_done(tableau=tabl)
+
+        return tabl.solution
+    except RayTermination as e:
+        callback.on_ray_termination(message=str(e), tableau=e.tableau)
+        return None
 
 
 @click.command(
@@ -515,13 +568,15 @@ def main(verbose, z0, lcpfilename):
     LCPFILENAME is the path to the input file.
     """
 
-    print(f"verbose={verbose} lcpfilename={lcpfilename} z0={z0}")
-    # printout (f"{verbose}= {lcpfilename}= {silent}= {z0}=")
     m = lcp.from_file(lcpfilename)
-    print(m)
-    print("==================================")
-    tabl = tableau(m)
-    tabl.runlemke(verbose=verbose, z0=z0, output_stream=sys.stdout)
+
+    result = runlemke(
+        lcp=m,
+        callback=PrintingCallback(stream=sys.stdout, verbose=verbose, z0=z0),
+    )
+
+    if result is None:
+        sys.exit(1)
 
 
 if __name__ == "__main__":

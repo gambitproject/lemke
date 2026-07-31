@@ -17,17 +17,9 @@ from typing import Callable
 
 import pytest
 
-from lemke.lemke import lcp, tableau
+from lemke.lemke import lcp, runlemke
 
 FIXTURES_DIR = Path("tests/fixtures/lcp")
-
-
-def lemke_solver(lcp_instance: lcp) -> list[Fr]:
-    """Runs Lemke's algorithm on the given LCP and returns the solution."""
-
-    tabl = tableau(lcp_instance)
-    tabl.runlemke()
-    return tabl.solution
 
 
 @dataclass
@@ -164,7 +156,7 @@ def test_with_expected_results(test_case: LCPTestCase, subtests):
     """
 
     lcp_instance = test_case.factory()
-    sol = lemke_solver(lcp_instance)
+    sol = runlemke(lcp=lcp_instance)
     n = lcp_instance.n
 
     with subtests.test("Solution length"):
@@ -190,7 +182,7 @@ def test_with_lcp_conditions(test_case: LCPTestCase, subtests):
     """
 
     lcp_instance = test_case.factory()
-    sol = lemke_solver(lcp_instance)
+    sol = runlemke(lcp=lcp_instance)
 
     # solution format: [z0, z1..zn, w1..wn]
     n = lcp_instance.n
@@ -243,11 +235,8 @@ FAILURE_CASES = [
 def test_failure(test_case: LCPTestCase):
     """
     Test the Lemke solver on LCPs that terminate on a secondary ray
-    by verifying that it raises SystemExit with code 1.
+    by verifying that it returns None.
     """
     lcp_instance = test_case.factory()
 
-    with pytest.raises(SystemExit) as exc_info:
-        lemke_solver(lcp_instance)
-
-    assert exc_info.value.code == 1
+    assert runlemke(lcp=lcp_instance) is None
