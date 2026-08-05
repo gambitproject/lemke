@@ -28,6 +28,7 @@ class LCPTestCase:
     factory: Callable[[], lcp]
     expected_z: list[Fr] | None = None
     expected_w: list[Fr] | None = None
+    expected_basis: set[str] | None = None
     tol: Fr = Fr(0)
 
 
@@ -40,6 +41,7 @@ TRIVIAL_CASES = [
             factory=lambda: lcp.from_file(FIXTURES_DIR / "trivial_q_pos_M_arbitrary"),
             expected_z=[Fr(0), Fr(0)],
             expected_w=[Fr(3), Fr(1)],
+            expected_basis={"w1", "w2"},
         ),
         id="trivial_q_pos_M_arbitrary",
     ),
@@ -49,6 +51,7 @@ TRIVIAL_CASES = [
             factory=lambda: lcp.from_file(FIXTURES_DIR / "trivial_q_zero_M_identity"),
             expected_z=[Fr(0), Fr(0)],
             expected_w=[Fr(0), Fr(0)],
+            expected_basis={"w1", "w2"},
         ),
         id="trivial_q_zero_M_identity",
     ),
@@ -58,6 +61,7 @@ TRIVIAL_CASES = [
             factory=lambda: lcp.from_file(FIXTURES_DIR / "trivial_q_zero_M_zero"),
             expected_z=[Fr(0), Fr(0)],
             expected_w=[Fr(0), Fr(0)],
+            expected_basis={"w1", "w2"},
         ),
         id="trivial_q_zero_M_zero",
     ),
@@ -73,6 +77,7 @@ NON_DEGENERATE_CASES = [
             factory=lambda: lcp.from_file(FIXTURES_DIR / "non_degenerate_book_ex_3x3"),
             expected_z=[Fr(0), Fr(1), Fr(3)],
             expected_w=[Fr(2), Fr(0), Fr(0)],
+            expected_basis={"w1", "z2", "z3"},
         ),
         id="non_degenerate_book_ex_3x3",
     ),
@@ -83,6 +88,7 @@ NON_DEGENERATE_CASES = [
             factory=lambda: lcp.from_file(FIXTURES_DIR / "non_degenerate_book_ex_4x4"),
             expected_z=[Fr(0), Fr(1, 2), Fr(0), Fr(0)],
             expected_w=[Fr(1, 2), Fr(0), Fr(11, 2), Fr(4)],
+            expected_basis={"w1", "z2", "w3", "w4"},
         ),
         id="non_degenerate_book_ex_4x4",
     ),
@@ -94,6 +100,7 @@ NON_DEGENERATE_CASES = [
             factory=lambda: lcp.from_file(FIXTURES_DIR / "non_degenerate_1x1"),
             expected_z=[Fr(329, 20)],
             expected_w=[Fr(0)],
+            expected_basis={"z1"},
         ),
         id="non_degenerate_1x1",
     ),
@@ -103,6 +110,7 @@ NON_DEGENERATE_CASES = [
             factory=lambda: lcp.from_file(FIXTURES_DIR / "non_degenerate_2x2"),
             expected_z=[Fr(2), Fr(1)],
             expected_w=[Fr(0), Fr(0)],
+            expected_basis={"z1", "z2"},
         ),
         id="non_degenerate_2x2",
     ),
@@ -114,6 +122,7 @@ NON_DEGENERATE_CASES = [
             factory=lambda: lcp.from_file(FIXTURES_DIR / "non_degenerate_M_identity"),
             expected_z=[Fr(51, 10), Fr(0), Fr(0), Fr(8)],
             expected_w=[Fr(0), Fr(2, 7), Fr(10), Fr(0)],
+            expected_basis={"z1", "w2", "w3", "z4"},
         ),
         id="non_degenerate_M_identity",
     ),
@@ -130,6 +139,7 @@ DEGENERATE_CASES = [
             factory=lambda: lcp.from_file(FIXTURES_DIR / "degenerate_tie_in_initial_lexmin"),
             expected_z=[Fr(0), Fr(1)],
             expected_w=[Fr(0), Fr(0)],
+            expected_basis={"w1", "z2"},
         ),
         id="degenerate_tie_in_initial_lexmin",
     ),
@@ -139,6 +149,7 @@ DEGENERATE_CASES = [
             factory=lambda: lcp.from_file(FIXTURES_DIR / "degenerate_tie_in_noninitial_lexmin"),
             expected_z=[Fr(0), Fr(1)],
             expected_w=[Fr(0), Fr(0)],
+            expected_basis={"w1", "z2"},
         ),
         id="degenerate_tie_in_noninitial_lexmin",
     ),
@@ -148,6 +159,7 @@ DEGENERATE_CASES = [
             factory=lambda: lcp.from_file(FIXTURES_DIR / "degenerate_tie_in_several_lexmins"),
             expected_z=[Fr(0), Fr(1), Fr(0)],
             expected_w=[Fr(1), Fr(0), Fr(0)],
+            expected_basis={"w1", "z2", "w3"},
         ),
         id="degenerate_tie_in_several_lexmins",
     ),
@@ -175,6 +187,9 @@ def test_with_expected_results(test_case: LCPTestCase, subtests):
 
     with subtests.test("z0 value"):
         assert result.z0 == Fr(0)
+
+    with subtests.test("Basis value"):
+        assert result.basis == test_case.expected_basis
 
     for i, val in enumerate(result.z):
         expected_val = test_case.expected_z[i]
@@ -211,6 +226,22 @@ def test_with_lcp_conditions(test_case: LCPTestCase, subtests):
 
     with subtests.test("z0 = 0"):
         assert z0 == Fr(0)
+
+    for i in range(n):
+        with subtests.test(index=i):
+            occurrences = sum(
+                1 for var in result.basis
+                if int(var[1:]) == i
+            )
+
+            if i == 0:
+                assert occurrences <= 1, (
+                    f"Index {i} appears {occurrences} times in basis"
+                )
+            else:
+                assert occurrences == 1, (
+                    f"Index {i} appears {occurrences} times in basis"
+                )
 
     for i, val in enumerate(z):
         with subtests.test(f"z{i + 1} nonnegativity"):
