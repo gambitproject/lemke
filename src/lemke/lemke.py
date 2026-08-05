@@ -527,6 +527,17 @@ class LcpResult:
 def runlemke(*, lcp, callback=None):
     callback = callback or LemkeCallback()
 
+    # trivial case (q >= 0)
+    if all(element >= 0 for element in lcp.q):
+        return LcpResult(
+            success=True,
+            num_pivots=0,
+            basis={f"w{i + 1}" for i in range(lcp.n)},
+            z0=fractions.Fraction(0),
+            z=[fractions.Fraction(0) for _ in range(lcp.n)],
+            w=lcp.q,
+        )
+
     try:
         tabl = tableau(lcp)
 
