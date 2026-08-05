@@ -491,37 +491,39 @@ class LcpResult:
 
         return str(sol)
 
-    @classmethod
-    def from_tableau(cls, tabl, success):
-        # create solution
-        n = tabl.n
-        basis = set()
 
-        # [z0, z1, ..., zn, w1, ..., wn]
-        solution = [fractions.Fraction(0) for _ in range(2 * n + 1)]
+def result_from_tableau(
+    tableau: tableau,
+    success: bool,
+) -> LcpResult:
+    n = tableau.n
+    basis = set()
 
-        for i in range(2 * n + 1):
-            row = tabl.bascobas[i]
-            if row < n:  # i is a basic variable
-                num = tabl.A[row][n + 1]
-                # value of  Z(i):   scfa[Z(i)]*rhs[row] / (scfa[RHS]*det)
-                # value of  W(i-n): rhs[row] / (scfa[RHS]*det)
-                if i <= n:  # computing Z(i)
-                    num *= tabl.scalefactor[i]
-                solution[i] = fractions.Fraction(
-                    num,
-                    tabl.determinant * tabl.scalefactor[n + 1]
-                )
-                basis.add(tabl.vartoa(i))
+    # [z0, z1, ..., zn, w1, ..., wn]
+    solution = [fractions.Fraction(0) for _ in range(2 * n + 1)]
 
-        return cls(
-            success=success,
-            num_pivots=tabl.pivotcount,
-            basis=basis,
-            z0=solution[0],
-            z=solution[1:n + 1],
-            w=solution[n + 1:],
-        )
+    for i in range(2 * n + 1):
+        row = tableau.bascobas[i]
+        if row < n:  # i is a basic variable
+            num = tableau.A[row][n + 1]
+            # value of  Z(i):   scfa[Z(i)]*rhs[row] / (scfa[RHS]*det)
+            # value of  W(i-n): rhs[row] / (scfa[RHS]*det)
+            if i <= n:  # computing Z(i)
+                num *= tableau.scalefactor[i]
+            solution[i] = fractions.Fraction(
+                num,
+                tableau.determinant * tableau.scalefactor[n + 1]
+            )
+            basis.add(tableau.vartoa(i))
+
+    return LcpResult(
+        success=success,
+        num_pivots=tableau.pivotcount,
+        basis=basis,
+        z0=solution[0],
+        z=solution[1:n + 1],
+        w=solution[n + 1:],
+    )
 
 
 def runlemke(*, lcp, callback=None):
@@ -574,12 +576,12 @@ def runlemke(*, lcp, callback=None):
             leave, z0leave = tabl.lexminvar(enter)
             tabl.pivotcount += 1
 
-        result = LcpResult.from_tableau(tabl, True)
+        result = result_from_tableau(tabl, True)
         callback.on_done(tableau=tabl, result=result)
 
         return result
     except RayTermination as e:
-        result = LcpResult.from_tableau(e.tableau, False)
+        result = result_from_tableau(e.tableau, False)
         callback.on_ray_termination(message=str(e), result=result, tableau=e.tableau)
         return result
 
