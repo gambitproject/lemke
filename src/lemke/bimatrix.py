@@ -163,7 +163,7 @@ class bimatrix:
         if result is None:
             raise RuntimeError("runlemke() failed to find a solution unexpectedly.")
 
-        equilibrium = result[1: lcp.n - 1]
+        equilibrium = result.z[:-2]
         return tuple(equilibrium)
 
     def LH(self, LHstring):
@@ -193,7 +193,7 @@ class bimatrix:
         if result is None:
             raise RuntimeError("runlemke() failed to find a solution unexpectedly.")
 
-        equilibrium = result[1: lcp.n - 1]
+        equilibrium = result.z[:-2]
         return tuple(equilibrium)
 
     def trace_uniform_prior(self):
