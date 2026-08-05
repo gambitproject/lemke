@@ -3,6 +3,7 @@
 import fractions
 import math  # gcd
 import sys
+from dataclasses import dataclass
 
 import click
 
@@ -99,7 +100,7 @@ class tableau:
         self.lextested = [0] * (n + 1)
         self.lexcomparisons = [0] * (n + 1)
         self.pivotcount = 0
-        self.solution = [fractions.Fraction(0)] * (2 * n + 1)  # all vars
+
         # variable encodings: VARS = 0..2n = Z(0) .. Z(n) W(1) .. W(n)
         # tableau columns: RHS n+1
         # bascobas[v] in 0..n-1: basic,   bascobas[v]   = tableau row
@@ -175,21 +176,6 @@ class tableau:
             return "w" + str(v - self.n)
         else:
             return "z" + str(v)
-
-    def createsol(self):  # get solution from current tableau
-        n = self.n
-        for i in range(2 * n + 1):
-            row = self.bascobas[i]
-            if row < n:  # i is a basic variable
-                num = self.A[row][n + 1]
-                # value of  Z(i):   scfa[Z(i)]*rhs[row] / (scfa[RHS]*det)
-                # value of  W(i-n): rhs[row] / (scfa[RHS]*det)
-                if i <= n:  # computing Z(i)
-                    num *= self.scalefactor[i]
-                self.solution[i] = fractions.Fraction(num,
-                                                      self.determinant * self.scalefactor[n + 1])
-            else:  # i is nonbasic
-                self.solution[i] = fractions.Fraction(0)
 
     def assertbasic(self, v, info):  # assert that v is basic
         if self.bascobas[v] >= self.n:
@@ -355,33 +341,10 @@ class tableau:
 
 class RayTermination(Exception):
     def __init__(self, enter, tableau):
-        tableau.createsol()
         self.tableau = tableau
         super().__init__(
             "Ray termination when trying to enter " + tableau.vartoa(enter)
         )
-
-
-def outsol(tableau):  # string giving solution, after createsol()
-    # printout in columns to check complementarity
-    n = tableau.n
-    sol = columnprint.columnprint(n + 2)
-    sol.sprint("basis=")
-    for i in range(n + 1):
-        if tableau.bascobas[i] < n:  # Z(i) is a basic variable
-            s = tableau.vartoa(i)
-        elif i > 0 and tableau.bascobas[n + i] < n:  # W(i) is a basic variable
-            s = tableau.vartoa(n + i)
-        else:
-            s = "  "
-        sol.sprint(s)
-    sol.sprint("z=")
-    for i in range(2 * n + 1):
-        sol.sprint(str(tableau.solution[i]))
-        if i == n:  # new line since printouting slack vars  w  next
-            sol.sprint("w=")
-            sol.sprint("")  # no W(0)
-    return str(sol)
 
 
 # output statistics of minimum ratio test
@@ -415,8 +378,8 @@ class LemkeCallback:
     def on_negcol(self, tableau): pass
     def on_pivot_start(self, tableau, leave, enter): pass
     def on_pivot_end(self, tableau): pass
-    def on_done(self, tableau): pass
-    def on_ray_termination(self, tableau, message): pass
+    def on_done(self, tableau, result): pass
+    def on_ray_termination(self, tableau, result, message): pass
 
 
 class PrintingCallback(LemkeCallback):
@@ -473,7 +436,7 @@ class PrintingCallback(LemkeCallback):
         if self.verbose:
             self.printout(tableau)
 
-    def on_done(self, tableau):
+    def on_done(self, tableau, result):
         if self.z0:
             self.printout(f"pivot count = {tableau.pivotcount + 1}, z0 = 0.0")
 
@@ -482,21 +445,100 @@ class PrintingCallback(LemkeCallback):
         self.printout(tableau)
 
         # if (flags.boutsol)
-        self.printout(outsol(tableau))
+        self.printout(result)
 
         if self.lexstats:
             # output statistics of minimum ratio test
             self.printout(outstatistics(tableau))
 
-    def on_ray_termination(self, tableau, message):
+    def on_ray_termination(self, tableau, result, message):
         self.printout(message)
         self.printout(tableau)
         self.printout("Current basis not an LCP solution:")
-        self.printout(outsol(tableau))
+        self.printout(result)
+
+
+@dataclass
+class LcpResult:
+    success: bool
+    num_pivots: int
+    basis: set[str]  # e.g. {'w1', 'z2', ...}
+    z0: fractions.Fraction
+    z: list[fractions.Fraction]  # [z1, ..., zn]
+    w: list[fractions.Fraction]  # [w1, ..., wn]
+
+    def __str__(self):
+        # printout in columns to check complementarity
+        n = len(self.w)
+
+        sol = columnprint.columnprint(n + 2)
+
+        sol.sprint("basis=")
+        # align basis elements with corresponding columns
+        basis_by_row = {int(b[1:]): b for b in self.basis}
+        for i in range(n + 1):
+            sol.sprint(basis_by_row.get(i, "  "))
+
+        sol.sprint("z=")
+        sol.sprint(str(self.z0))
+        for el in self.z:
+            sol.sprint(str(el))
+
+        sol.sprint("w=")
+        sol.sprint("")  # no W(0)
+        for el in self.w:
+            sol.sprint(str(el))
+
+        return str(sol)
+
+
+def result_from_tableau(
+    tableau: tableau,
+    success: bool,
+) -> LcpResult:
+    n = tableau.n
+    basis = set()
+
+    # [z0, z1, ..., zn, w1, ..., wn]
+    solution = [fractions.Fraction(0) for _ in range(2 * n + 1)]
+
+    for i in range(2 * n + 1):
+        row = tableau.bascobas[i]
+        if row < n:  # i is a basic variable
+            num = tableau.A[row][n + 1]
+            # value of  Z(i):   scfa[Z(i)]*rhs[row] / (scfa[RHS]*det)
+            # value of  W(i-n): rhs[row] / (scfa[RHS]*det)
+            if i <= n:  # computing Z(i)
+                num *= tableau.scalefactor[i]
+            solution[i] = fractions.Fraction(
+                num,
+                tableau.determinant * tableau.scalefactor[n + 1]
+            )
+            basis.add(tableau.vartoa(i))
+
+    return LcpResult(
+        success=success,
+        num_pivots=tableau.pivotcount,
+        basis=basis,
+        z0=solution[0],
+        z=solution[1:n + 1],
+        w=solution[n + 1:],
+    )
 
 
 def runlemke(*, lcp, callback=None):
     callback = callback or LemkeCallback()
+
+    # trivial case (q >= 0)
+    if all(element >= 0 for element in lcp.q):
+        return LcpResult(
+            success=True,
+            num_pivots=0,
+            basis={f"w{i + 1}" for i in range(lcp.n)},
+            z0=fractions.Fraction(0),
+            z=[fractions.Fraction(0) for _ in range(lcp.n)],
+            w=lcp.q,
+        )
 
     try:
         tabl = tableau(lcp)
@@ -534,13 +576,14 @@ def runlemke(*, lcp, callback=None):
             leave, z0leave = tabl.lexminvar(enter)
             tabl.pivotcount += 1
 
-        tabl.createsol()
-        callback.on_done(tableau=tabl)
+        result = result_from_tableau(tabl, True)
+        callback.on_done(tableau=tabl, result=result)
 
-        return tabl.solution
+        return result
     except RayTermination as e:
-        callback.on_ray_termination(message=str(e), tableau=e.tableau)
-        return None
+        result = result_from_tableau(e.tableau, False)
+        callback.on_ray_termination(message=str(e), result=result, tableau=e.tableau)
+        return result
 
 
 @click.command(
@@ -575,7 +618,7 @@ def main(verbose, z0, lcpfilename):
         callback=PrintingCallback(stream=sys.stdout, verbose=verbose, z0=z0),
     )
 
-    if result is None:
+    if not result.success:
         sys.exit(1)
 
 

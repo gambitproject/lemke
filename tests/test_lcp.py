@@ -26,7 +26,9 @@ FIXTURES_DIR = Path("tests/fixtures/lcp")
 class LCPTestCase:
     """Defines data for one LCP test case for Lemke's algorithm."""
     factory: Callable[[], lcp]
-    expected: list[Fr] | None = None
+    expected_z: list[Fr] | None = None
+    expected_w: list[Fr] | None = None
+    expected_basis: set[str] | None = None
     tol: Fr = Fr(0)
 
 
@@ -37,7 +39,9 @@ TRIVIAL_CASES = [
     pytest.param(
         LCPTestCase(
             factory=lambda: lcp.from_file(FIXTURES_DIR / "trivial_q_pos_M_arbitrary"),
-            expected=[Fr(0), Fr(0), Fr(0), Fr(3), Fr(1)],
+            expected_z=[Fr(0), Fr(0)],
+            expected_w=[Fr(3), Fr(1)],
+            expected_basis={"w1", "w2"},
         ),
         id="trivial_q_pos_M_arbitrary",
     ),
@@ -45,7 +49,9 @@ TRIVIAL_CASES = [
     pytest.param(
         LCPTestCase(
             factory=lambda: lcp.from_file(FIXTURES_DIR / "trivial_q_zero_M_identity"),
-            expected=[Fr(0), Fr(0), Fr(0), Fr(0), Fr(0)],
+            expected_z=[Fr(0), Fr(0)],
+            expected_w=[Fr(0), Fr(0)],
+            expected_basis={"w1", "w2"},
         ),
         id="trivial_q_zero_M_identity",
     ),
@@ -53,7 +59,9 @@ TRIVIAL_CASES = [
     pytest.param(
         LCPTestCase(
             factory=lambda: lcp.from_file(FIXTURES_DIR / "trivial_q_zero_M_zero"),
-            expected=[Fr(0), Fr(0), Fr(0), Fr(0), Fr(0)],
+            expected_z=[Fr(0), Fr(0)],
+            expected_w=[Fr(0), Fr(0)],
+            expected_basis={"w1", "w2"},
         ),
         id="trivial_q_zero_M_zero",
     ),
@@ -67,7 +75,9 @@ NON_DEGENERATE_CASES = [
     pytest.param(
         LCPTestCase(
             factory=lambda: lcp.from_file(FIXTURES_DIR / "non_degenerate_book_ex_3x3"),
-            expected=[Fr(0), Fr(0), Fr(1), Fr(3), Fr(2), Fr(0), Fr(0)],
+            expected_z=[Fr(0), Fr(1), Fr(3)],
+            expected_w=[Fr(2), Fr(0), Fr(0)],
+            expected_basis={"w1", "z2", "z3"},
         ),
         id="non_degenerate_book_ex_3x3",
     ),
@@ -76,7 +86,9 @@ NON_DEGENERATE_CASES = [
     pytest.param(
         LCPTestCase(
             factory=lambda: lcp.from_file(FIXTURES_DIR / "non_degenerate_book_ex_4x4"),
-            expected=[Fr(0), Fr(0), Fr(1, 2), Fr(0), Fr(0), Fr(1, 2), Fr(0), Fr(11, 2), Fr(4)],
+            expected_z=[Fr(0), Fr(1, 2), Fr(0), Fr(0)],
+            expected_w=[Fr(1, 2), Fr(0), Fr(11, 2), Fr(4)],
+            expected_basis={"w1", "z2", "w3", "w4"},
         ),
         id="non_degenerate_book_ex_4x4",
     ),
@@ -86,7 +98,9 @@ NON_DEGENERATE_CASES = [
     pytest.param(
         LCPTestCase(
             factory=lambda: lcp.from_file(FIXTURES_DIR / "non_degenerate_1x1"),
-            expected=[Fr(0), Fr(329, 20), Fr(0)],
+            expected_z=[Fr(329, 20)],
+            expected_w=[Fr(0)],
+            expected_basis={"z1"},
         ),
         id="non_degenerate_1x1",
     ),
@@ -94,7 +108,9 @@ NON_DEGENERATE_CASES = [
     pytest.param(
         LCPTestCase(
             factory=lambda: lcp.from_file(FIXTURES_DIR / "non_degenerate_2x2"),
-            expected=[Fr(0), Fr(2), Fr(1), Fr(0), Fr(0)],
+            expected_z=[Fr(2), Fr(1)],
+            expected_w=[Fr(0), Fr(0)],
+            expected_basis={"z1", "z2"},
         ),
         id="non_degenerate_2x2",
     ),
@@ -104,7 +120,9 @@ NON_DEGENERATE_CASES = [
     pytest.param(
         LCPTestCase(
             factory=lambda: lcp.from_file(FIXTURES_DIR / "non_degenerate_M_identity"),
-            expected=[Fr(0), Fr(51, 10), Fr(0), Fr(0), Fr(8), Fr(0), Fr(2, 7), Fr(10), Fr(0)],
+            expected_z=[Fr(51, 10), Fr(0), Fr(0), Fr(8)],
+            expected_w=[Fr(0), Fr(2, 7), Fr(10), Fr(0)],
+            expected_basis={"z1", "w2", "w3", "z4"},
         ),
         id="non_degenerate_M_identity",
     ),
@@ -119,7 +137,9 @@ DEGENERATE_CASES = [
     pytest.param(
         LCPTestCase(
             factory=lambda: lcp.from_file(FIXTURES_DIR / "degenerate_tie_in_initial_lexmin"),
-            expected=[Fr(0), Fr(0), Fr(1), Fr(0), Fr(0)],
+            expected_z=[Fr(0), Fr(1)],
+            expected_w=[Fr(0), Fr(0)],
+            expected_basis={"w1", "z2"},
         ),
         id="degenerate_tie_in_initial_lexmin",
     ),
@@ -127,7 +147,9 @@ DEGENERATE_CASES = [
     pytest.param(
         LCPTestCase(
             factory=lambda: lcp.from_file(FIXTURES_DIR / "degenerate_tie_in_noninitial_lexmin"),
-            expected=[Fr(0), Fr(0), Fr(1), Fr(0), Fr(0)],
+            expected_z=[Fr(0), Fr(1)],
+            expected_w=[Fr(0), Fr(0)],
+            expected_basis={"w1", "z2"},
         ),
         id="degenerate_tie_in_noninitial_lexmin",
     ),
@@ -135,7 +157,9 @@ DEGENERATE_CASES = [
     pytest.param(
         LCPTestCase(
             factory=lambda: lcp.from_file(FIXTURES_DIR / "degenerate_tie_in_several_lexmins"),
-            expected=[Fr(0), Fr(0), Fr(1), Fr(0), Fr(1), Fr(0), Fr(0)],
+            expected_z=[Fr(0), Fr(1), Fr(0)],
+            expected_w=[Fr(1), Fr(0), Fr(0)],
+            expected_basis={"w1", "z2", "w3"},
         ),
         id="degenerate_tie_in_several_lexmins",
     ),
@@ -143,7 +167,7 @@ DEGENERATE_CASES = [
 
 
 SUCCESS_CASES = []
-# SUCCESS_CASES += TRIVIAL_CASES
+SUCCESS_CASES += TRIVIAL_CASES
 SUCCESS_CASES += NON_DEGENERATE_CASES
 SUCCESS_CASES += DEGENERATE_CASES
 
@@ -156,17 +180,25 @@ def test_with_expected_results(test_case: LCPTestCase, subtests):
     """
 
     lcp_instance = test_case.factory()
-    sol = runlemke(lcp=lcp_instance)
-    n = lcp_instance.n
+    result = runlemke(lcp=lcp_instance)
 
-    with subtests.test("Solution length"):
-        assert len(sol) == 2 * n + 1
+    with subtests.test("Solution status"):
+        assert result.success
 
-    for i, val in enumerate(sol):
-        label = f"z{i}" if i <= n else f"w{i - n}"
-        expected_val = test_case.expected[i]
+    with subtests.test("z0 value"):
+        assert result.z0 == Fr(0)
 
-        with subtests.test(f"{label} value"):
+    with subtests.test("Basis value"):
+        assert result.basis == test_case.expected_basis
+
+    for i, val in enumerate(result.z):
+        expected_val = test_case.expected_z[i]
+        with subtests.test(f"z{i + 1} value"):
+            assert abs(val - expected_val) <= test_case.tol
+
+    for i, val in enumerate(result.w):
+        expected_val = test_case.expected_w[i]
+        with subtests.test(f"w{i + 1} value"):
             assert abs(val - expected_val) <= test_case.tol
 
 
@@ -182,16 +214,34 @@ def test_with_lcp_conditions(test_case: LCPTestCase, subtests):
     """
 
     lcp_instance = test_case.factory()
-    sol = runlemke(lcp=lcp_instance)
+    result = runlemke(lcp=lcp_instance)
 
-    # solution format: [z0, z1..zn, w1..wn]
     n = lcp_instance.n
-    z0 = sol[0]
-    z = sol[1:n + 1]
-    w = sol[n + 1:]
+    z0 = result.z0
+    z = result.z
+    w = result.w
+
+    with subtests.test("Solution status"):
+        assert result.success
 
     with subtests.test("z0 = 0"):
         assert z0 == Fr(0)
+
+    for i in range(n):
+        with subtests.test(index=i):
+            occurrences = sum(
+                1 for var in result.basis
+                if int(var[1:]) == i
+            )
+
+            if i == 0:
+                assert occurrences <= 1, (
+                    f"Index {i} appears {occurrences} times in basis"
+                )
+            else:
+                assert occurrences == 1, (
+                    f"Index {i} appears {occurrences} times in basis"
+                )
 
     for i, val in enumerate(z):
         with subtests.test(f"z{i + 1} nonnegativity"):
@@ -239,4 +289,6 @@ def test_failure(test_case: LCPTestCase):
     """
     lcp_instance = test_case.factory()
 
-    assert runlemke(lcp=lcp_instance) is None
+    result = runlemke(lcp=lcp_instance)
+
+    assert result.success is False
