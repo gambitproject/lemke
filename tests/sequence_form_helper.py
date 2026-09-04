@@ -223,10 +223,10 @@ def solve_via_sequence_form(game):
     d = [Fr(1) for _ in range(len(q))]
 
     lcp_instance = lcp_from_data(M, q, d)
-    sol = runlemke(lcp=lcp_instance)
+    result = runlemke(lcp=lcp_instance)
 
     # realization plans
-    x_y = sol[1:(ns1 + ns2 + 1)]
+    x_y = result.z
     x = x_y[:ns1]
     y = x_y[ns1:]
 
