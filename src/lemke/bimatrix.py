@@ -9,7 +9,6 @@ import numpy as np
 
 from . import columnprint, lemke, randomstart, utils
 from .randomstart import MAX_ACCURACY
-from .utils import MAXDECIMALS
 
 # file format:
 # <m> <n>
@@ -45,14 +44,13 @@ def rangesplit(s, endrange=50):
 class payoffmatrix:
     # create matrix from any numerical matrix
     def __init__(self, A):
-        AA = np.array(A)
+        AA = np.array(A, dtype=object)
+        if not all(isinstance(x, fractions.Fraction) for x in AA.flat):
+            raise TypeError("matrix must contain only Fraction values")
         m, n = AA.shape
         self.numrows = m
         self.numcolumns = n
-        self.matrix = np.zeros((m, n), dtype=fractions.Fraction)
-        for i in range(m):
-            for j in range(n):
-                self.matrix[i][j] = utils.tofraction(AA[i][j])
+        self.matrix = AA
         self.fullmaxmin()
 
     def __str__(self):
@@ -83,12 +81,16 @@ class payoffmatrix:
 
     # add full row, row must be of size n
     def addrow(self, row):
+        if not all(isinstance(x, fractions.Fraction) for x in row):
+            raise TypeError("New row must contain only Fraction values")
         self.matrix = np.vstack([self.matrix, row])
         self.numrows += 1
         self.updatemaxmin(self.numrows - 1, 0)
 
     # add full column, col must be of size m
     def addcolumn(self, col):
+        if not all(isinstance(x, fractions.Fraction) for x in col):
+            raise TypeError("New column must contain only Fraction values")
         self.matrix = np.column_stack([self.matrix, col])
         self.numcolumns += 1
         self.updatemaxmin(0, self.numcolumns - 1)
@@ -101,7 +103,8 @@ class bimatrix:
 
     # create A,B from file
     @classmethod
-    def from_file(cls, filename):
+    def from_file(cls, filename, decimals=utils.DEFAULT_DECIMALS):
+        utils.validate_decimals(decimals)
         lines = utils.stripcomments(filename)
         # flatten into words
         words = utils.towords(lines)
@@ -113,10 +116,10 @@ class bimatrix:
             print("m=", m, ", n=", n, ", need", needfracs, "payoffs, got", len(words) - 2)
             exit(1)
         k = 2
-        C = utils.tomatrix(m, n, words, k)
+        C = utils.tomatrix(m, n, words, k, decimals)
         A = payoffmatrix(C)
         k += m * n
-        C = utils.tomatrix(m, n, words, k)
+        C = utils.tomatrix(m, n, words, k, decimals)
         B = payoffmatrix(C)
         return cls(A, B)
 
@@ -300,9 +303,9 @@ def common_options(f):
     )
     @click.option(
         "--decimals",
-        default=4,
+        default=utils.DEFAULT_DECIMALS,
         show_default=True,
-        type=click.IntRange(min=0, max=MAXDECIMALS),
+        type=click.IntRange(min=0, max=utils.MAXDECIMALS),
         metavar="INTEGER",
         help="Allowed payoff digits in input after decimal point",
     )
@@ -312,8 +315,7 @@ def common_options(f):
     #     help="Show value of z0 at each step",
     # )
     @wraps(f)
-    def wrapper(*args, decimals, **kwargs):
-        utils.setdecimals(decimals)
+    def wrapper(*args, **kwargs):
         return f(*args, **kwargs)
     return wrapper
 
@@ -326,10 +328,10 @@ def common_options(f):
     help="Missing labels, e.g. 1,3-5,7-  "
          "[default: all labels]",
 )
-def lh(filename, labels):
+def lh(filename, decimals, labels):
     """Find equilibria using the Lemke-Howson algorithm."""
 
-    G = bimatrix.from_file(filename)
+    G = bimatrix.from_file(filename, decimals)
     G.LH(labels)
 
 
@@ -341,10 +343,10 @@ def trace():
 
 @trace.command(name="uniform")
 @common_options
-def trace_uniform_cmd(filename):
+def trace_uniform_cmd(filename, decimals):
     """Trace using a uniform prior."""
 
-    G = bimatrix.from_file(filename)
+    G = bimatrix.from_file(filename, decimals)
     G.trace_uniform_prior()
 
 
@@ -371,8 +373,8 @@ def trace_uniform_cmd(filename):
     metavar="INTEGER",
     help="Denominator x: each coordinate of the prior is rounded to the nearest 1/x",
 )
-def trace_random_cmd(filename, priors, seed, accuracy):
+def trace_random_cmd(filename, decimals, priors, seed, accuracy):
     """Trace using random prior(s)."""
 
-    G = bimatrix.from_file(filename)
+    G = bimatrix.from_file(filename, decimals)
     G.trace_random_priors(priors, seed, accuracy)

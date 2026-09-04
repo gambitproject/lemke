@@ -18,7 +18,8 @@ class lcp:
         self.n = len(d)
 
     @classmethod
-    def from_file(cls, filename):
+    def from_file(cls, filename, decimals=utils.DEFAULT_DECIMALS):
+        utils.validate_decimals(decimals)
         # create LCP from file
         lines = utils.stripcomments(filename)
         # flatten into words
@@ -42,15 +43,15 @@ class lcp:
         while k < len(words):
             if words[k] == "M=":
                 k += 1
-                M = utils.tomatrix(n, n, words, k)
+                M = utils.tomatrix(n, n, words, k, decimals)
                 k += n * n
             elif words[k] == "q=":
                 k += 1
-                q = utils.tovector(n, words, k)
+                q = utils.tovector(n, words, k, decimals)
                 k += n
             elif words[k] == "d=":
                 k += 1
-                d = utils.tovector(n, words, k)
+                d = utils.tovector(n, words, k, decimals)
                 k += n
             else:
                 raise ValueError(
@@ -557,18 +558,26 @@ def runlemke(*, lcp, callback=None):
     is_flag=True,
     help="Show value of z0 at each step",
 )
+@click.option(
+    "--decimals",
+    default=utils.DEFAULT_DECIMALS,
+    show_default=True,
+    type=click.IntRange(min=0, max=utils.MAXDECIMALS),
+    metavar="INTEGER",
+    help="Allowed payoff digits in input after decimal point",
+)
 @click.argument(
     "lcpfilename",
     type=click.Path(exists=True, readable=True, file_okay=True, dir_okay=False),
 )
-def main(verbose, z0, lcpfilename):
+def main(verbose, z0, decimals, lcpfilename):
     """
     Tool for solving linear complementarity problems using Lemke's algorithm.
 
     LCPFILENAME is the path to the input file.
     """
 
-    m = lcp.from_file(lcpfilename)
+    m = lcp.from_file(lcpfilename, decimals)
 
     result = runlemke(
         lcp=m,

@@ -35,6 +35,24 @@ def test_lcp_valid_file(tmp_path, raw, expected):
     assert m.M[0][0] == expected
 
 
+@pytest.mark.parametrize(
+    "raw, expected, decimals",
+    [
+        ("0.00015", Fraction(2, 10000), 4),
+        ("0.145", Fraction(3, 20), 2),
+        ("9999999999999991.1", Fraction(9999999999999991, 1), 0),
+        ("9999999999999999.1", Fraction(99999999999999991, 10), 4),
+    ]
+)
+def test_lcp_file_parsing_in_fractions(tmp_path, raw, expected, decimals):
+    content = f"n= 1\nM= {raw}\nq= 1\nd= 1\n"
+    file_path = tmp_path / "lcp"
+    file_path.write_text(content)
+
+    m = lcp.from_file(str(file_path), decimals)
+    assert m.M[0][0] == expected
+
+
 @pytest.mark.parametrize("content", [
     "M= 1 0 0 1 q= 1 1 d= 1 1\n",           # missing n=
     "n= 2\nM= 1 0 0 1\nq= 1 1\nd= 1\n",     # wrong number of values
