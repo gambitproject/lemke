@@ -10,6 +10,7 @@ from lemke.randomstart import (
     MAX_ACCURACY,
     main,
     maptotriangle,
+    plot_simplex,
     randInSimplex,
     renormalize,
     roundArray,
@@ -79,6 +80,10 @@ class TestRoundArrayFailure:
         with pytest.raises(ValueError, match="accuracy must be between"):
             roundArray([0.5, 0.5], accuracy=bad_accuracy)
 
+    def test_accuracy_not_integer(self):
+        with pytest.raises(TypeError, match="accuracy must be an integer"):
+            roundArray([0.5, 0.5], accuracy=2.5)
+
     def test_invalid_probabilities(self):
         with pytest.raises(ValueError, match="need probabilities"):
             roundArray([1.0, 1.0])
@@ -114,6 +119,17 @@ class TestMapToTriangle:
     )
     def test_known_points(self, vec, expected):
         assert maptotriangle(vec) == pytest.approx(expected)
+
+
+class TestPlotSimplex:
+    @pytest.mark.parametrize("bad_higherdim", [-1, 2, 11])
+    def test_higherdim_out_of_bounds(self, bad_higherdim):
+        with pytest.raises(ValueError, match="higherdim must be between"):
+            plot_simplex(higherdim=bad_higherdim)
+
+    def test_higherdim_not_integer(self):
+        with pytest.raises(TypeError, match="higherdim must be an integer"):
+            plot_simplex(higherdim=3.5)
 
 
 class TestCLI:
