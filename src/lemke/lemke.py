@@ -554,8 +554,10 @@ def outsol(tableau):
             s = "  "
         sol.sprint(s)
     sol.sprint("z=")
+    result = result_from_tableau(tableau, success=False)
+    solution = (result.z0,) + result.z + result.w
     for i in range(2 * n + 1):
-        sol.sprint(str(tableau.solution[i]))
+        sol.sprint(str(solution[i]))
         if i == n:  # new line since printouting slack vars  w  next
             sol.sprint("w=")
             sol.sprint("")  # no W(0)
