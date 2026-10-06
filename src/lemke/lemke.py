@@ -21,18 +21,22 @@ class lcp:
 
     Parameters
     ----------
-    M : list of list of fractions.Fraction
+    M : list of list of int or fractions.Fraction
         Square matrix of shape `(n, n)`.
-    q : list of fractions.Fraction
+    q : list of int or fractions.Fraction
         Vector of length `n`.
-    d : list of fractions.Fraction
+    d : list of int or fractions.Fraction
         Covering vector of length `n`.
+
+    Entries must be exact rationals (anything with integer ``numerator``
+    and ``denominator``, such as `int` or `fractions.Fraction`);
+    floats are not supported.
 
     Attributes
     ----------
-    M : list of list of fractions.Fraction
+    M : list of list of int or fractions.Fraction
         As passed in.
-    q, d : list of fractions.Fraction
+    q, d : list of int or fractions.Fraction
         As passed in.
     n : int
         Dimension of the problem.
@@ -561,6 +565,11 @@ class LemkeCallback:
     Subclass and override any of these methods to log, print, or
     otherwise react to the algorithm's progress (e.g. `PrintingCallback`).
     All methods are no-ops by default.
+
+    Each pivot triggers `on_pivot_start`. Every pivot except the last of a
+    successful run is followed by `on_pivot_end`; the final pivot, which
+    makes ``z0`` leave the basis, is followed by `on_done` instead.
+    No callbacks are invoked when ``q >= 0``, since no pivoting is needed.
     """
 
     def on_start(self, lcp, tableau):
@@ -573,7 +582,9 @@ class LemkeCallback:
         """Called before each pivot, with the chosen leave/enter variables."""
 
     def on_pivot_end(self, tableau):
-        """Called after each pivot completes."""
+        """Called after each pivot completes, except the final one
+        of a successful run (see `on_done`).
+        """
 
     def on_done(self, tableau, result):
         """Called once a complementary solution is found,

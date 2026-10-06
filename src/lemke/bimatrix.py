@@ -38,14 +38,18 @@ def rangesplit(s, endrange=50):
 class payoffmatrix:
     """A single player's payoff matrix, stored as exact fractions.
 
-    Wraps a numerical matrix as an array of `fractions.Fraction` entries.
+    Wraps a matrix of `fractions.Fraction` entries as a NumPy array.
 
     Parameters
     ----------
-    A : array_like
-        Numerical payoff matrix of shape ``(m, n)``.
-        Entries may be int, float, or Fraction;
-        they are converted to `Fraction`.
+    A : array_like of fractions.Fraction
+        Payoff matrix of shape ``(m, n)``. Every entry must be a
+        `fractions.Fraction`; ints and floats are not converted.
+
+    Raises
+    ------
+    TypeError
+        If any entry of `A` is not a `fractions.Fraction`.
 
     Attributes
     ----------
@@ -67,11 +71,12 @@ class payoffmatrix:
 
     Examples
     --------
+    >>> from fractions import Fraction as F
     >>> from lemke.bimatrix import payoffmatrix
-    >>> payoffs = payoffmatrix([[3, 0], [0, 2]])
+    >>> payoffs = payoffmatrix([[F(3), F(0)], [F(0), F(2)]])
     >>> payoffs.numrows
     2
-    >>> payoffs.max
+    >>> print(payoffs.max)
     3
     """
 
@@ -183,10 +188,11 @@ class bimatrix:
 
     Examples
     --------
+    >>> from fractions import Fraction as F
     >>> from lemke.bimatrix import bimatrix, payoffmatrix
     >>> game = bimatrix(
-    ...     A=payoffmatrix([[3, 0], [0, 2]]),
-    ...     B=payoffmatrix([[2, 0], [0, 7]]),
+    ...     A=payoffmatrix([[F(3), F(0)], [F(0), F(2)]]),
+    ...     B=payoffmatrix([[F(2), F(0)], [F(0), F(7)]]),
     ... )
     >>> game.A.numrows
     2
@@ -387,10 +393,14 @@ class bimatrix:
 
         Parameters
         ----------
-        xprior : array_like
-            Row player's prior strategy (probabilities summing to 1).
-        yprior : array_like
-            Column player's prior strategy (probabilities summing to 1).
+        xprior : array_like of fractions.Fraction
+            Row player's prior strategy: ``m`` exact rational probabilities
+            summing to 1, where ``m`` is the number of rows.
+            Floats are not supported.
+        yprior : array_like of fractions.Fraction
+            Column player's prior strategy: ``n`` exact rational probabilities
+            summing to 1, where ``n`` is the number of columns.
+            Floats are not supported.
 
         Returns
         -------
