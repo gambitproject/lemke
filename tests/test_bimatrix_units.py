@@ -4,7 +4,6 @@ from fractions import Fraction
 import pytest
 from click.testing import CliRunner
 
-from lemke import utils
 from lemke.bimatrix import (
     bimatrix,
     lh,
@@ -24,8 +23,8 @@ from lemke.utils import MAXDECIMALS
 @pytest.fixture
 def small_payoff_matrix():
     return payoffmatrix([
-        [1, 2],
-        [3, 4],
+        [Fraction(1), Fraction(2)],
+        [Fraction(3), Fraction(4)],
     ])
 
 
@@ -64,7 +63,7 @@ def test_payoff_matrix_negshift_negmatrix(small_payoff_matrix):
 
 def test_addrow_updates_shape_max_min(small_payoff_matrix):
     pm = small_payoff_matrix
-    pm.addrow([10, -10])
+    pm.addrow([Fraction(10), Fraction(-10)])
     assert pm.numrows == 3
     assert pm.matrix[2][0] == Fraction(10)
     assert pm.max == Fraction(10)
@@ -73,7 +72,7 @@ def test_addrow_updates_shape_max_min(small_payoff_matrix):
 
 def test_addcolumn_updates_shape_max_min(small_payoff_matrix):
     pm = small_payoff_matrix
-    pm.addcolumn([-5, 20])
+    pm.addcolumn([Fraction(-5), Fraction(20)])
     assert pm.numcolumns == 3
     assert pm.matrix[0][2] == Fraction(-5)
     assert pm.max == Fraction(20)
@@ -83,7 +82,6 @@ def test_addcolumn_updates_shape_max_min(small_payoff_matrix):
 # ---   BIMATRIX INIT   --------------------------------------------------
 @pytest.fixture
 def small_game_file(tmp_path):
-    utils.setdecimals(4)
     content = textwrap.dedent("""
         2 2
 
