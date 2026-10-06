@@ -661,7 +661,7 @@ def trace_uniform_cmd(filename, decimals):
     show_default=True,
     type=click.IntRange(1, MAX_ACCURACY),
     metavar="INTEGER",
-    help="Denominator x: each coordinate of the prior is rounded to the nearest 1/x",
+    help="Denominator x: prior coordinates are rounded to multiples of 1/x that sum to 1",
 )
 def trace_random_cmd(filename, decimals, priors, seed, accuracy):
     """Trace using random prior(s)."""
