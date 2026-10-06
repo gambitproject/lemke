@@ -43,6 +43,12 @@ dev = [
     "ruff",
 ]
 
+doc = [
+    "sphinx>=7.0",
+    "pydata-sphinx-theme",
+    "sphinx-autobuild",
+]
+
 [project.urls]
 Repository = "https://github.com/gambitproject/lemke.git"
 
