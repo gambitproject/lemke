@@ -22,7 +22,8 @@ class lcp:
     Parameters
     ----------
     M : list of list of int or fractions.Fraction
-        Square matrix of shape `(n, n)`.
+        Square matrix of shape `(n, n)`, given as the list of its `n` rows,
+        so ``M[i][j]`` is the entry in row `i` and column `j`.
     q : list of int or fractions.Fraction
         Vector of length `n`.
     d : list of int or fractions.Fraction
@@ -66,7 +67,8 @@ class lcp:
 
         Expects a file starting with ``n= <dim>``,
         followed by keyword-labeled blocks ``M=``, ``q=``, ``d=``
-        giving the matrix and vectors as whitespace-separated numbers.
+        giving the matrix and vectors as whitespace-separated numbers,
+        with the entries of ``M`` listed row by row.
         Numbers may be given as integers, fractions (e.g. ``1/3``),
         or decimals (e.g. ``0.3``).
         Blank lines and lines starting with ``#``, ``%`` or ``*`` are ignored.
