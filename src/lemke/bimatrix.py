@@ -135,6 +135,7 @@ class payoffmatrix:
         row : array_like
             Row to append; must have length `numcolumns`.
         """
+        row = np.array([utils.tofraction(x) for x in row], dtype=fractions.Fraction)
         self.matrix = np.vstack([self.matrix, row])
         self.numrows += 1
         self.updatemaxmin(self.numrows - 1, 0)
