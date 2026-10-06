@@ -1,4 +1,5 @@
 import fractions
+import numbers
 import random
 
 import click
@@ -30,21 +31,28 @@ def randInSimplex(n, naive=False):
         return x
 
 
+def validate_accuracy(accuracy):
+    """Check that `accuracy` is an integer between 1 and `MAX_ACCURACY`."""
+    if not isinstance(accuracy, numbers.Integral):
+        raise TypeError(f"accuracy must be an integer, got {type(accuracy).__name__}")
+    if not 1 <= accuracy <= MAX_ACCURACY:
+        raise ValueError(f"accuracy must be between 1 and {MAX_ACCURACY}, got {accuracy}")
+
+
 def roundArray(x, accuracy=10000):
     """
-    Round each entry of an array of probabilities `x`
-    to the nearest multiple of 1 / `accuracy`.
+    Round an array of probabilities `x` to multiples of 1 / `accuracy`
+    that still sum to 1.
 
+    Entries are not necessarily rounded to the nearest multiple,
+    since the rounded values must sum to 1.
     The probabilities are multiplied by `accuracy`, then rounded down to their integer parts,
     which will be the numerators, augmented by 1 in order of decreasing size of the remainders
     (which are less than 1) until they sum to `accuracy`.
 
     Example: accuracy=10, x=[0.18, .35, .47] becomes [2/10, 3/10, 5/10].
     """
-    if not isinstance(accuracy, int):
-        raise TypeError(f"accuracy must be an integer, got {type(accuracy).__name__}")
-    if not 1 <= accuracy <= MAX_ACCURACY:
-        raise ValueError(f"accuracy must be between 1 and {MAX_ACCURACY}, got {accuracy}")
+    validate_accuracy(accuracy)
 
     n = len(x)
     sum = 0
@@ -97,8 +105,9 @@ def plot_simplex(numpoints=200, accuracy=20, higherdim=3, naiveplot=False):
     numpoints : int
         Number of points to plot. Default is 200.
     accuracy : int
-        Denominator x; each coordinate is rounded to the nearest multiple of 1/x.
-        Default is 20. Must be between 1 and 10,000,000.
+        Denominator for rounding: each point's coordinates are rounded to
+        multiples of 1/`accuracy` that sum to 1 (see `roundArray`).
+        Default is 20. Must be between 1 and `MAX_ACCURACY` (10,000,000).
     higherdim : int
         Dimension from which the middle 3 components will be sampled.
         Default is 3. Must be between 3 and 10.
@@ -108,18 +117,21 @@ def plot_simplex(numpoints=200, accuracy=20, higherdim=3, naiveplot=False):
 
     Raises
     ------
+    TypeError
+        If `accuracy` or `higherdim` is not an integer.
     ValueError
         If `accuracy` or `higherdim` is out of range.
     """
-    if not isinstance(higherdim, int):
+    if not isinstance(higherdim, numbers.Integral):
         raise TypeError(f"higherdim must be an integer, got {type(higherdim).__name__}")
     if not 3 <= higherdim <= 10:
         raise ValueError(f"higherdim must be between 3 and 10, got {higherdim}")
+    validate_accuracy(accuracy)
     print(
         f"numpoints={numpoints} accuracy={accuracy} higherdim={higherdim} naiveplot={naiveplot}"
     )
+    segmentstart = (higherdim - 2) // 2
     if higherdim > 3:
-        segmentstart = (higherdim - 2) // 2
         print("show positions", segmentstart, "..",
               segmentstart + 2, "of 0 ..", higherdim - 1)
     fig1, ax = plt.subplots()
@@ -134,14 +146,13 @@ def plot_simplex(numpoints=200, accuracy=20, higherdim=3, naiveplot=False):
     for _ in range(numpoints):
         point = randInSimplex(higherdim, naiveplot)
         if higherdim > 3:
-            segmentstart = (higherdim - 2) // 2
             point = renormalize(point[segmentstart:segmentstart + 3])
         roundedpoints.append(roundArray(point, accuracy))
         x, y = maptotriangle(point)
         plt.plot([x], [y], "g.")
     for circ in roundedpoints:
         x, y = maptotriangle(circ)
-        plt.scatter([x], [y], s=max(20, 10000 // accuracy), facecolors="none",
+        plt.scatter([x], [y], s=10000 // accuracy, facecolors="none",
                     edgecolors="r")
     plt.show()
 
