@@ -3,6 +3,8 @@ import math
 from unittest.mock import patch
 
 import matplotlib
+import matplotlib.pyplot as plt
+import numpy as np
 import pytest
 from click.testing import CliRunner
 
@@ -10,6 +12,7 @@ from lemke.randomstart import (
     MAX_ACCURACY,
     main,
     maptotriangle,
+    plot_simplex,
     randInSimplex,
     renormalize,
     roundArray,
@@ -79,6 +82,19 @@ class TestRoundArrayFailure:
         with pytest.raises(ValueError, match="accuracy must be between"):
             roundArray([0.5, 0.5], accuracy=bad_accuracy)
 
+    def test_accuracy_not_integer(self):
+        with pytest.raises(TypeError, match="accuracy must be an integer"):
+            roundArray([0.5, 0.5], accuracy=2.5)
+
+    def test_accuracy_numpy_integer_accepted(self):
+        assert roundArray([0.5, 0.5], accuracy=np.int64(2)) == [
+            fractions.Fraction(1, 2), fractions.Fraction(1, 2)
+        ]
+
+    def test_not_always_nearest_multiple(self):
+        # 0.4 is rounded up to 1 so that the entries sum to 1
+        assert roundArray([0.4, 0.3, 0.3], accuracy=1) == [1, 0, 0]
+
     def test_invalid_probabilities(self):
         with pytest.raises(ValueError, match="need probabilities"):
             roundArray([1.0, 1.0])
@@ -114,6 +130,34 @@ class TestMapToTriangle:
     )
     def test_known_points(self, vec, expected):
         assert maptotriangle(vec) == pytest.approx(expected)
+
+
+class TestPlotSimplex:
+    @pytest.mark.parametrize("bad_higherdim", [-1, 2, 11])
+    def test_higherdim_out_of_bounds(self, bad_higherdim):
+        with pytest.raises(ValueError, match="higherdim must be between"):
+            plot_simplex(higherdim=bad_higherdim)
+
+    def test_higherdim_not_integer(self):
+        with pytest.raises(TypeError, match="higherdim must be an integer"):
+            plot_simplex(higherdim=3.5)
+
+    @pytest.mark.parametrize("bad_accuracy", [0, MAX_ACCURACY + 1])
+    def test_accuracy_out_of_bounds_checked_before_plotting(self, bad_accuracy):
+        plt.close("all")
+        with pytest.raises(ValueError, match="accuracy must be between"):
+            plot_simplex(numpoints=0, accuracy=bad_accuracy)
+        assert plt.get_fignums() == []
+
+    def test_accuracy_not_integer(self):
+        with pytest.raises(TypeError, match="accuracy must be an integer"):
+            plot_simplex(accuracy=2.5)
+
+    @pytest.mark.parametrize("higherdim", [3, 7])
+    def test_runs_without_error(self, higherdim):
+        with patch("matplotlib.pyplot.show"):
+            plot_simplex(numpoints=10, accuracy=100, higherdim=higherdim)
+        plt.close("all")
 
 
 class TestCLI:
