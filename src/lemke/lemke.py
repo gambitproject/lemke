@@ -1,4 +1,4 @@
-# LCP solver
+"""Lemke's algorithm for solving linear complementarity problems (LCPs)."""
 
 import fractions
 import math  # gcd
@@ -10,8 +10,50 @@ import click
 from . import columnprint, utils
 
 
-# LCP data M,q,d
 class lcp:
+    r"""A linear complementarity problem instance `(M, q, d)`.
+
+    Represents the LCP :math:`w = q + Mz,\ w, z \ge 0,\ z^T w = 0`,
+    together with a covering vector `d` used to start Lemke's algorithm.
+
+    Can be constructed directly from `M`, `q`, `d`,
+    or via `from_file` for problems stored in the LCP file format.
+
+    Parameters
+    ----------
+    M : list of list of int or fractions.Fraction
+        Square matrix of shape `(n, n)`.
+    q : list of int or fractions.Fraction
+        Vector of length `n`.
+    d : list of int or fractions.Fraction
+        Covering vector of length `n`.
+
+    Entries must be exact rationals (anything with integer ``numerator``
+    and ``denominator``, such as `int` or `fractions.Fraction`);
+    floats are not supported.
+
+    Attributes
+    ----------
+    M : list of list of int or fractions.Fraction
+        As passed in.
+    q, d : list of int or fractions.Fraction
+        As passed in.
+    n : int
+        Dimension of the problem.
+
+    Examples
+    --------
+    >>> from fractions import Fraction as F
+    >>> from lemke.lemke import lcp
+    >>> problem = lcp(
+    ...     M=[[F(2), F(1)], [F(1), F(2)]],
+    ...     q=[F(-1), F(-1)],
+    ...     d=[F(1), F(1)],
+    ... )
+    >>> problem.n
+    2
+    """
+
     def __init__(self, M, q, d):
         self.M = M
         self.q = q
@@ -20,8 +62,55 @@ class lcp:
 
     @classmethod
     def from_file(cls, filename, decimals=utils.DEFAULT_DECIMALS):
+        """Create an LCP instance from a text file.
+
+        Expects a file starting with ``n= <dim>``,
+        followed by keyword-labeled blocks ``M=``, ``q=``, ``d=``
+        giving the matrix and vectors as whitespace-separated numbers.
+        Numbers may be given as integers, fractions (e.g. ``1/3``),
+        or decimals (e.g. ``0.3``).
+        Blank lines and lines starting with ``#``, ``%`` or ``*`` are ignored.
+
+        Parameters
+        ----------
+        filename : str or pathlib.Path
+            Path to the LCP file.
+        decimals : int, optional
+            Number of decimal places to which numbers written as decimals
+            (e.g. ``0.145``) are rounded before conversion to fractions.
+            Must be between 0 and `utils.MAXDECIMALS`.
+            Default is `utils.DEFAULT_DECIMALS`.
+
+        Returns
+        -------
+        lcp
+            The LCP described by the file.
+
+        Raises
+        ------
+        TypeError
+            If `decimals` is not an integer.
+        ValueError
+            If `decimals` is out of range, the file does not start with ``n=``,
+            doesn't contain the expected number of values, has an unrecognized
+            keyword, or contains an invalid number.
+
+        Examples
+        --------
+        Given a file ``lcp.txt`` containing::
+
+            n= 2
+            M= 2 1
+               1 2
+            q= -1 -1
+            d= 1 1
+
+        >>> from lemke.lemke import lcp
+        >>> problem = lcp.from_file("lcp.txt")
+        >>> print(problem.n)
+        2
+        """
         utils.validate_decimals(decimals)
-        # create LCP from file
         lines = utils.stripcomments(filename)
         # flatten into words
         words = utils.towords(lines)
@@ -87,7 +176,40 @@ class lcp:
 
 
 class tableau:
-    # filling the tableau from the LCP instance Mqd
+    """The tableau used to run Lemke's pivoting algorithm.
+
+    Stores the LCP data as a scaled integer tableau
+    (to allow exact arithmetic during pivoting)
+    and keeps track of which variables are currently basic/cobasic.
+
+    Parameters
+    ----------
+    Mqd : lcp
+        The LCP instance to build the tableau from.
+
+    Attributes
+    ----------
+    n : int
+        Problem dimension.
+    A : list of list of int
+        The scaled tableau, shape `(n, n + 2)`
+        (columns correspond to `n + 1` cobasic variables, plus RHS).
+    determinant : int
+        Current tableau determinant (always positive after pivoting).
+    scalefactor : list of int
+        Per-column scale factors (LCM of denominators) used to keep
+        the tableau in exact integer arithmetic.
+    bascobas : list of int
+        Location for each variable index: its tableau row (if basic) or
+        ``n + column`` (if cobasic).
+    whichvar : list of int
+        Inverse of `bascobas`: which variable occupies each row or column.
+    pivotcount : int
+        Number of pivots performed so far.
+    lextested, lexcomparisons : list of int
+        Per-column statistics from the lexicographic minimum-ratio test.
+    """
+
     def __init__(self, Mqd):
         self.n = Mqd.n
         n = self.n
@@ -172,25 +294,29 @@ class tableau:
         out += "\n" + "-----------------end of tableau-----------------"
         return out
 
-    def vartoa(self, v):  # variable as as string w1..wn or z0..zn
+    def vartoa(self, v):
+        """Return the display name of variable index `v`, e.g. "z0" or "w3"."""
         if v > self.n:
             return "w" + str(v - self.n)
         else:
             return "z" + str(v)
 
-    def assertbasic(self, v, info):  # assert that v is basic
+    def assertbasic(self, v, info):
+        """Assert that variable v is basic."""
         if self.bascobas[v] >= self.n:
             raise RuntimeError(
                 f"({info}) Cobasic variable {self.vartoa(v)} should be basic"
             )
 
-    def assertcobasic(self, v, info):  # assert that v is cobasic
+    def assertcobasic(self, v, info):
+        """Assert that variable v is cobasic."""
         if self.bascobas[v] < self.n:
             raise RuntimeError(
                 f"({info}) Basic variable {self.vartoa(v)} should be cobasic"
             )
 
     def testtablvars(self):
+        """Check that `bascobas` and `whichvar` are consistent inverses."""
         n = self.n
         for i in range(2 * n + 1):
             if self.bascobas[self.whichvar[i]] != i:
@@ -205,7 +331,24 @@ class tableau:
                     )
                 raise RuntimeError(f"testtablvars() failed:\n{message}")
 
-    def complement(self, v):  # Z(i),W(i) are complements
+    def complement(self, v):
+        """Return the complementary variable of `v` (Z(i) <-> W(i)).
+
+        Parameters
+        ----------
+        v : int
+            A variable index other than ``z0``.
+
+        Returns
+        -------
+        int
+            The complementary variable index.
+
+        Raises
+        ------
+        RuntimeError
+            If `v` is ``z0`` (0), which has no complement.
+        """
         n = self.n
         if v == 0:
             raise RuntimeError("Attempt to find complement of z0")
@@ -214,14 +357,28 @@ class tableau:
         else:
             return v + n
 
-    # returns leave,z0leave
-    # leave = leaving variable in VARS, given by lexmin row,
-    # when enter in VARS is entering variable
-    # only positive entries of entering column tested.
-    # Boolean z0leave indicates that z0 can leave the
-    # basis, but the lex-minratio test is performed fully,
-    # so  leave  might not be the index of z0
     def lexminvar(self, enter):
+        """Find the leaving variable via the lexicographic minimum-ratio test.
+
+        Parameters
+        ----------
+        enter : int
+            The entering variable index (must currently be cobasic).
+
+        Returns
+        -------
+        leave : int
+            The leaving variable index.
+        z0leave : bool
+            True if ``z0`` is among the (possibly tied) leaving candidates,
+            meaning the algorithm may terminate after this pivot.
+
+        Raises
+        ------
+        RayTermination
+            If no row has a positive entry in the entering column,
+            meaning the algorithm has found an unbounded ray instead of a solution.
+        """
         n = self.n
         A = self.A
         self.assertcobasic(enter, "Lexminvar")
@@ -285,21 +442,31 @@ class tableau:
 
     # end of lexminvar(enter)
 
-    # negate tableau column  col
     def negcol(self, col):
+        """Negate every entry in the given column of the tableau."""
         for i in range(self.n):
             self.A[i][col] = -self.A[i][col]
 
-    # negate tableau row.  Used in  pivot()
     def negrow(self, row):
+        """Negate every entry in the given row of the tableau."""
         for j in range(self.n + 2):
             self.A[row][j] = -self.A[row][j]
 
-    # leave, enter in  VARS  defining  row, col  of  A
-    # pivot tableau on the element  A[row][col] which must be nonzero
-    # afterwards tableau normalized with positive determinant
-    # and updated tableau variables
     def pivot(self, leave, enter):
+        """Pivot the tableau, exchanging `leave` (basic) and `enter` (cobasic).
+
+        Performs an exact-arithmetic pivot on ``A[row][col]``
+        where `row`/`col` correspond to `leave`/`enter`,
+        then renormalizes the tableau to have positive determinant
+        and updates the basic/cobasic variables.
+
+        Parameters
+        ----------
+        leave : int
+            Variable currently basic that will become cobasic.
+        enter : int
+            Variable currently cobasic that will become basic.
+        """
         n = self.n
         A = self.A
         row = self.bascobas[leave]
@@ -341,6 +508,23 @@ class tableau:
 
 
 class RayTermination(Exception):
+    """Raised when Lemke's algorithm can't find a solution
+    and terminates on a secondary ray.
+
+    Parameters
+    ----------
+    enter : int
+        The variable that could not enter the basis
+        (no positive pivot candidate).
+    tableau : tableau
+        The tableau at the point of termination.
+
+    Attributes
+    ----------
+    tableau : tableau
+        The incomplete tableau at termination.
+    """
+
     def __init__(self, enter, tableau):
         self.tableau = tableau
         self.enter = tableau.vartoa(enter)
@@ -349,8 +533,8 @@ class RayTermination(Exception):
         )
 
 
-# output statistics of minimum ratio test
 def outstatistics(tableau):
+    """Helper to output statistics of minimum ratio test."""
     n = tableau.n
     lext = tableau.lextested
     stats = columnprint.columnprint(n + 2)
@@ -376,23 +560,60 @@ def outstatistics(tableau):
 
 
 class LemkeCallback:
-    def on_start(self, lcp, tableau): pass
-    def on_negcol(self, tableau): pass
-    def on_pivot_start(self, tableau, leave, enter): pass
-    def on_pivot_end(self, tableau): pass
-    def on_done(self, tableau, result): pass
-    def on_ray_termination(self, tableau, result, message): pass
+    """Callback interface for observing the progress of `runlemke`.
+
+    Subclass and override any of these methods to log, print, or
+    otherwise react to the algorithm's progress (e.g. `PrintingCallback`).
+    All methods are no-ops by default.
+
+    Each pivot triggers `on_pivot_start`. Every pivot except the last of a
+    successful run is followed by `on_pivot_end`; the final pivot, which
+    makes ``z0`` leave the basis, is followed by `on_done` instead.
+    No callbacks are invoked when ``q >= 0``, since no pivoting is needed.
+    """
+
+    def on_start(self, lcp, tableau):
+        """Called once, after the initial tableau is built."""
+
+    def on_negcol(self, tableau):
+        """Called after the RHS column is negated to start pivoting."""
+
+    def on_pivot_start(self, tableau, leave, enter):
+        """Called before each pivot, with the chosen leave/enter variables."""
+
+    def on_pivot_end(self, tableau):
+        """Called after each pivot completes, except the final one
+        of a successful run (see `on_done`).
+        """
+
+    def on_done(self, tableau, result):
+        """Called once a complementary solution is found,
+        with the final `LcpResult`.
+        """
+
+    def on_ray_termination(self, tableau, result, message):
+        """Called if the algorithm terminates on a secondary ray,
+        with the (unsuccessful) `LcpResult` and the termination message.
+        """
 
 
 class PrintingCallback(LemkeCallback):
-    # z0: printout value of z0
-    # flags.maxcount   = 0;
-    # flags.bdocupivot = 1;
-    # flags.binitabl   = 1;
-    # flags.bouttabl   = 0;  (= verbose)
-    # flags.boutsol    = 1;
-    # flags.binteract  = 0;
-    # flags.blexstats  = 0;
+    """A `LemkeCallback` that prints tableaus and progress to a stream.
+
+    Parameters
+    ----------
+    stream : file-like, optional
+        Where to print output. Default is `sys.stdout`.
+    verbose : bool, optional
+        If True, print the full tableau after every pivot,
+        not just at the start and end. Default is False.
+    z0 : bool, optional
+        If True, print the current value of ``z0`` before each pivot.
+        Default is False.
+    lexstats : bool, optional
+        If True, print lexicographic minimum-ratio test statistics
+        when the algorithm finishes successfully. Default is False.
+    """
 
     def __init__(
         self,
@@ -407,9 +628,11 @@ class PrintingCallback(LemkeCallback):
         self.lexstats = lexstats
 
     def printout(self, *args):
+        """Print `args` to this callback's stream."""
         print(*args, file=self.stream)
 
     def on_start(self, lcp, tableau):
+        """Print the LCP instance and the initial tableau."""
         self.printout(f"verbose={self.verbose} z0={self.z0} lexstats={self.lexstats}")
         self.printout(lcp)
         self.printout("==================================")
@@ -419,12 +642,16 @@ class PrintingCallback(LemkeCallback):
         self.printout(tableau)
 
     def on_negcol(self, tableau):
+        """Print the tableau after negating the RHS column, if `verbose`."""
         # if (flags.binitabl)
         if self.verbose:
             self.printout("After negcol:")
             self.printout(tableau)
 
     def on_pivot_start(self, tableau, leave, enter):
+        """Print the chosen leaving/entering variables,
+        and `z0`'s value if `z0` is set.
+        """
         if self.z0:  # printout progress of z0
             z0_value = 0.0
             if tableau.bascobas[0] < tableau.n:  # z0 is basic
@@ -435,10 +662,14 @@ class PrintingCallback(LemkeCallback):
         self.printout(f"leaving: {leave.ljust(5)} entering: {enter}")
 
     def on_pivot_end(self, tableau):
+        """Print the tableau after the pivot completes, if `verbose`."""
         if self.verbose:
             self.printout(tableau)
 
     def on_done(self, tableau, result):
+        """Print the final tableau, the `result`,
+        and lex-stats if `lexstats` is set.
+        """
         if self.z0:
             self.printout(f"pivot count = {tableau.pivotcount + 1}, z0 = 0.0")
 
@@ -454,6 +685,9 @@ class PrintingCallback(LemkeCallback):
             self.printout(outstatistics(tableau))
 
     def on_ray_termination(self, tableau, result, message):
+        """Print the ray-termination message, tableau,
+        and the (unsuccessful) `result`.
+        """
         self.printout(message)
         self.printout(tableau)
         self.printout(result)
@@ -545,6 +779,53 @@ def result_from_tableau(
 
 
 def runlemke(*, lcp, callback=None):
+    """Solve an LCP using Lemke's complementary pivoting algorithm.
+
+    Parameters
+    ----------
+    lcp : lcp
+        The LCP instance to solve.
+    callback : LemkeCallback, optional
+        Hook invoked at each step of the algorithm to observe or report progress.
+        Pass `PrintingCallback` for a ready-made implementation. Default is None.
+
+    Returns
+    -------
+    LcpResult
+        The outcome of the algorithm. If a complementary solution was found,
+        `success` is True and `z`, `w` hold the solution.
+        If the algorithm terminated on a secondary ray, `success` is False,
+        `ray_entering_variable` names the variable that could not enter,
+        and `z0`, `z`, `w` describe the final (non-solution) basis.
+        If ``q >= 0`` the trivial solution ``z = 0, w = q`` is returned
+        without pivoting and without invoking `callback`.
+
+    Examples
+    --------
+    Basic usage with no callbacks:
+
+    >>> from lemke.lemke import lcp, runlemke
+    >>> problem = lcp.from_file("lcp.txt")
+    >>> result = runlemke(lcp=problem)
+    >>> result.success
+    True
+    >>> result.z
+    (Fraction(1, 3), Fraction(1, 3))
+    >>> print(result)
+    Process finished successfully after 3 pivots.
+    Solution found:
+    basis=     z1  z2
+        z=  0 1/3 1/3
+        w=      0   0
+
+    Usage with a printing callback:
+
+    >>> from lemke.lemke import lcp, runlemke, PrintingCallback
+    >>> problem = lcp.from_file("lcp.txt")
+    >>> cb = PrintingCallback(verbose=True, z0=True)
+    >>> result = runlemke(lcp=problem, callback=cb)
+    # prints the given lcp, tableau and z0 at each step, and the final result
+    """
     callback = callback or LemkeCallback()
 
     # trivial case (q >= 0)
