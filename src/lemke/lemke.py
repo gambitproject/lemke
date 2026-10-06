@@ -57,7 +57,7 @@ class lcp:
         self.n = len(d)
 
     @classmethod
-    def from_file(cls, filename):
+    def from_file(cls, filename, decimals=utils.DEFAULT_DECIMALS):
         """Create an LCP instance from a text file.
 
         Expects a file starting with ``n= <dim>``,
@@ -65,12 +65,17 @@ class lcp:
         giving the matrix and vectors as whitespace-separated numbers.
         Numbers may be given as integers, fractions (e.g. ``1/3``),
         or decimals (e.g. ``0.3``).
-        ``#`` starts a comment that runs to the end of the line.
+        Blank lines and lines starting with ``#``, ``%`` or ``*`` are ignored.
 
         Parameters
         ----------
         filename : str or pathlib.Path
             Path to the LCP file.
+        decimals : int, optional
+            Number of decimal places to which numbers written as decimals
+            (e.g. ``0.145``) are rounded before conversion to fractions.
+            Must be between 0 and `utils.MAXDECIMALS`.
+            Default is `utils.DEFAULT_DECIMALS`.
 
         Returns
         -------
@@ -79,9 +84,12 @@ class lcp:
 
         Raises
         ------
+        TypeError
+            If `decimals` is not an integer.
         ValueError
-            If the file does not start with ``n=``, doesn't contain
-            the expected number of values, or has an unrecognized keyword.
+            If `decimals` is out of range, the file does not start with ``n=``,
+            doesn't contain the expected number of values, has an unrecognized
+            keyword, or contains an invalid number.
 
         Examples
         --------
@@ -98,6 +106,7 @@ class lcp:
         >>> print(problem.n)
         2
         """
+        utils.validate_decimals(decimals)
         lines = utils.stripcomments(filename)
         # flatten into words
         words = utils.towords(lines)
@@ -191,8 +200,6 @@ class tableau:
         ``n + column`` (if cobasic).
     whichvar : list of int
         Inverse of `bascobas`: which variable occupies each row or column.
-    solution : list of fractions.Fraction
-        Current solution vector, filled in by `createsol`.
     pivotcount : int
         Number of pivots performed so far.
     lextested, lexcomparisons : list of int
@@ -289,22 +296,6 @@ class tableau:
             return "w" + str(v - self.n)
         else:
             return "z" + str(v)
-
-    def createsol(self):
-        """Get solution from current tableau."""
-        n = self.n
-        for i in range(2 * n + 1):
-            row = self.bascobas[i]
-            if row < n:  # i is a basic variable
-                num = self.A[row][n + 1]
-                # value of  Z(i):   scfa[Z(i)]*rhs[row] / (scfa[RHS]*det)
-                # value of  W(i-n): rhs[row] / (scfa[RHS]*det)
-                if i <= n:  # computing Z(i)
-                    num *= self.scalefactor[i]
-                self.solution[i] = fractions.Fraction(num,
-                                                      self.determinant * self.scalefactor[n + 1])
-            else:  # i is nonbasic
-                self.solution[i] = fractions.Fraction(0)
 
     def assertbasic(self, v, info):
         """Assert that variable v is basic."""
@@ -523,7 +514,6 @@ class RayTermination(Exception):
         (no positive pivot candidate).
     tableau : tableau
         The tableau at the point of termination.
-        Its `solution` is populated before the exception is raised.
 
     Attributes
     ----------
@@ -537,31 +527,6 @@ class RayTermination(Exception):
         super().__init__(
             "Ray termination when trying to enter " + self.enter
         )
-
-
-def outsol(tableau):
-    """Format the solution vector [z0, z1, ..., zn, w1, ..., wn] into columns."""
-    # printout in columns to check complementarity
-    n = tableau.n
-    sol = columnprint.columnprint(n + 2)
-    sol.sprint("basis=")
-    for i in range(n + 1):
-        if tableau.bascobas[i] < n:  # Z(i) is a basic variable
-            s = tableau.vartoa(i)
-        elif i > 0 and tableau.bascobas[n + i] < n:  # W(i) is a basic variable
-            s = tableau.vartoa(n + i)
-        else:
-            s = "  "
-        sol.sprint(s)
-    sol.sprint("z=")
-    result = result_from_tableau(tableau, success=False)
-    solution = (result.z0,) + result.z + result.w
-    for i in range(2 * n + 1):
-        sol.sprint(str(solution[i]))
-        if i == n:  # new line since printouting slack vars  w  next
-            sol.sprint("w=")
-            sol.sprint("")  # no W(0)
-    return str(sol)
 
 
 def outstatistics(tableau):
@@ -610,11 +575,15 @@ class LemkeCallback:
     def on_pivot_end(self, tableau):
         """Called after each pivot completes."""
 
-    def on_done(self, tableau):
-        """Called once a complementary solution is found."""
+    def on_done(self, tableau, result):
+        """Called once a complementary solution is found,
+        with the final `LcpResult`.
+        """
 
-    def on_ray_termination(self, tableau, message):
-        """Called if the algorithm terminates on a secondary ray."""
+    def on_ray_termination(self, tableau, result, message):
+        """Called if the algorithm terminates on a secondary ray,
+        with the (unsuccessful) `LcpResult` and the termination message.
+        """
 
 
 class PrintingCallback(LemkeCallback):
@@ -686,8 +655,8 @@ class PrintingCallback(LemkeCallback):
         if self.verbose:
             self.printout(tableau)
 
-    def on_done(self, tableau):
-        """Print the final tableau, solution,
+    def on_done(self, tableau, result):
+        """Print the final tableau, the `result`,
         and lex-stats if `lexstats` is set.
         """
         if self.z0:
@@ -704,9 +673,9 @@ class PrintingCallback(LemkeCallback):
             # output statistics of minimum ratio test
             self.printout(outstatistics(tableau))
 
-    def on_ray_termination(self, tableau, message):
+    def on_ray_termination(self, tableau, result, message):
         """Print the ray-termination message, tableau,
-        and current (incomplete) solution.
+        and the (unsuccessful) `result`.
         """
         self.printout(message)
         self.printout(tableau)
@@ -811,12 +780,14 @@ def runlemke(*, lcp, callback=None):
 
     Returns
     -------
-    list of fractions.Fraction or None
-        The full solution vector (length ``2n + 1``,
-        indices ``z0, z1, ..., zn, w1, ..., wn``)
-        if a complementary solution was found,
-        or None if the algorithm couldn't find a solution
-        and terminated on a secondary ray.
+    LcpResult
+        The outcome of the algorithm. If a complementary solution was found,
+        `success` is True and `z`, `w` hold the solution.
+        If the algorithm terminated on a secondary ray, `success` is False,
+        `ray_entering_variable` names the variable that could not enter,
+        and `z0`, `z`, `w` describe the final (non-solution) basis.
+        If ``q >= 0`` the trivial solution ``z = 0, w = q`` is returned
+        without pivoting and without invoking `callback`.
 
     Examples
     --------
@@ -824,19 +795,25 @@ def runlemke(*, lcp, callback=None):
 
     >>> from lemke.lemke import lcp, runlemke
     >>> problem = lcp.from_file("lcp.txt")
-    >>> solution = runlemke(lcp=problem)
-    >>> print(solution)
-    [Fraction(0, 1), Fraction(2, 1), Fraction(1, 1), Fraction(0, 1), Fraction(0, 1)]
+    >>> result = runlemke(lcp=problem)
+    >>> result.success
+    True
+    >>> result.z
+    (Fraction(1, 3), Fraction(1, 3))
+    >>> print(result)
+    Process finished successfully after 3 pivots.
+    Solution found:
+    basis=     z1  z2
+        z=  0 1/3 1/3
+        w=      0   0
 
     Usage with a printing callback:
 
     >>> from lemke.lemke import lcp, runlemke, PrintingCallback
     >>> problem = lcp.from_file("lcp.txt")
     >>> cb = PrintingCallback(verbose=True, z0=True)
-    >>> solution = runlemke(lcp=problem, callback=cb)
-    # prints the given lcp, tableau and z0 at each step, and the final solution
-    >>> print(solution)
-    [Fraction(0, 1), Fraction(2, 1), Fraction(1, 1), Fraction(0, 1), Fraction(0, 1)]
+    >>> result = runlemke(lcp=problem, callback=cb)
+    # prints the given lcp, tableau and z0 at each step, and the final result
     """
     callback = callback or LemkeCallback()
 

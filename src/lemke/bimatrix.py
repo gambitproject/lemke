@@ -130,10 +130,16 @@ class payoffmatrix:
 
         Parameters
         ----------
-        row : array_like
+        row : array_like of fractions.Fraction
             Row to append; must have length `numcolumns`.
+
+        Raises
+        ------
+        TypeError
+            If any entry of `row` is not a `fractions.Fraction`.
         """
-        row = np.array([utils.tofraction(x) for x in row], dtype=fractions.Fraction)
+        if not all(isinstance(x, fractions.Fraction) for x in row):
+            raise TypeError("New row must contain only Fraction values")
         self.matrix = np.vstack([self.matrix, row])
         self.numrows += 1
         self.updatemaxmin(self.numrows - 1, 0)
@@ -143,8 +149,13 @@ class payoffmatrix:
 
         Parameters
         ----------
-        col : array_like
+        col : array_like of fractions.Fraction
             Column to append; must have length `numrows`.
+
+        Raises
+        ------
+        TypeError
+            If any entry of `col` is not a `fractions.Fraction`.
         """
         if not all(isinstance(x, fractions.Fraction) for x in col):
             raise TypeError("New column must contain only Fraction values")
@@ -186,7 +197,7 @@ class bimatrix:
         self.B = B
 
     @classmethod
-    def from_file(cls, filename):
+    def from_file(cls, filename, decimals=utils.DEFAULT_DECIMALS):
         """Create a bimatrix game from a text file.
 
         Expects the file format::
@@ -201,6 +212,11 @@ class bimatrix:
         ----------
         filename : str or pathlib.Path
             Path to the game file.
+        decimals : int, optional
+            Number of decimal places to which payoffs written as decimals
+            (e.g. ``0.145``) are rounded before conversion to fractions.
+            Must be between 0 and `utils.MAXDECIMALS`.
+            Default is `utils.DEFAULT_DECIMALS`.
 
         Returns
         -------
@@ -209,6 +225,10 @@ class bimatrix:
 
         Raises
         ------
+        TypeError
+            If `decimals` is not an integer.
+        ValueError
+            If `decimals` is out of range, or a payoff is not a valid number.
         SystemExit
             If the number of payoff values in the file is incorrect.
 
@@ -231,6 +251,7 @@ class bimatrix:
         >>> print(game.A.numrows)
         2
         """
+        utils.validate_decimals(decimals)
         lines = utils.stripcomments(filename)
         # flatten into words
         words = utils.towords(lines)
