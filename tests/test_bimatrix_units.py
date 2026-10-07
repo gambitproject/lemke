@@ -1,3 +1,4 @@
+import re
 import textwrap
 from fractions import Fraction
 
@@ -15,6 +16,7 @@ from lemke.bimatrix import (
     trace_uniform_cmd,
     uniform,
 )
+from lemke.lemke import LcpResult
 from lemke.randomstart import MAX_ACCURACY
 from lemke.utils import MAXDECIMALS
 
@@ -183,6 +185,38 @@ def test_rejects_non_positive_num_priors(small_game_file, bad_priors):
     G = bimatrix.from_file(small_game_file)
     with pytest.raises(ValueError):
         G.trace_random_priors(bad_priors)
+
+
+# ---   RUNLEMKE FAILURE  -------------------------------------------------
+@pytest.fixture
+def lemke_failure(monkeypatch):
+    failed_result = LcpResult(
+        success=False,
+        num_pivots=0,
+        basis=frozenset(),
+        z0=Fraction(-1),
+        z=(),
+        w=(),
+        ray_entering_variable=None,
+    )
+    monkeypatch.setattr(
+        "lemke.lemke.runlemke",
+        lambda **kwargs: failed_result,
+    )
+
+
+def test_runLH_throws_on_lemke_failure(lemke_failure, small_game_file):
+    G = bimatrix.from_file(small_game_file)
+
+    with pytest.raises(RuntimeError, match=re.escape("runlemke() failed")):
+        G.runLH(1)
+
+
+def test_runtrace_throws_on_lemke_failure(lemke_failure, small_game_file):
+    G = bimatrix.from_file(small_game_file)
+
+    with pytest.raises(RuntimeError, match=re.escape("runlemke() failed")):
+        G.runtrace([0.5, 0.5], [0.4, 0.6])
 
 
 # ---   HELPER FUNCTIONS   --------------------------------------------------------
