@@ -170,7 +170,7 @@ def plot_simplex(numpoints=200, accuracy=20, higherdim=3, naiveplot=False):
     "--accuracy",
     default=20,
     show_default=True,
-    help="Denominator x: each coordinate is rounded to the nearest multiple of 1/x",
+    help="Denominator x: coordinates are rounded to multiples of 1/x that sum to 1",
     type=click.IntRange(1, MAX_ACCURACY),
     metavar="INTEGER",
 )
