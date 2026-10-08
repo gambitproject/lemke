@@ -341,7 +341,7 @@ class bimatrix:
         # tabl.runlemke(verbose=True, lexstats=True, z0=gz0)
 
         result = lemke.runlemke(lcp=lcp)
-        if result is None:
+        if not result.success:
             raise RuntimeError("runlemke() failed to find a solution unexpectedly.")
 
         equilibrium = result.z[:-2]
@@ -418,7 +418,7 @@ class bimatrix:
         lcp.d = np.hstack((Ay, xB, [1, 1]))
 
         result = lemke.runlemke(lcp=lcp)
-        if result is None:
+        if not result.success:
             raise RuntimeError("runlemke() failed to find a solution unexpectedly.")
 
         equilibrium = result.z[:-2]
