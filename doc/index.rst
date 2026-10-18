@@ -16,3 +16,4 @@ Installation
    :maxdepth: 2
 
    api
+   file_formats
