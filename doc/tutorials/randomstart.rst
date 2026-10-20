@@ -1,4 +1,4 @@
-Visualising random priors on the simplex
+Visualizing random priors on the simplex
 ========================================
 
 This tutorial shows how to use :func:`~lemke.randomstart.plot_simplex`
@@ -73,7 +73,7 @@ Uniform versus naive sampling
 -----------------------------
 
 By default the points are sampled *uniformly* from the simplex.
-With ``naiveplot=True``, points are instead sampled by normalising
+With ``naiveplot=True``, points are instead sampled by normalizing
 independent uniform random numbers. This is a common shortcut,
 but it is **not** uniform. The points are denser near the centre
 of the triangle and sparser near the corners:
