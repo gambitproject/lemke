@@ -23,11 +23,14 @@ Features
 - Command-line tools: ``lemke``, ``bimatrix`` and ``randomstart``.
 
 
-Quick examples
+Usage examples
 --------------
 
-Solve a 2×2 LCP in Python
-~~~~~~~~~~~~~~~~~~~~~~~~~
+Here are two quick examples of using lemke.
+You can view more detailed explanations in the :doc:`tutorials`.
+
+1) Solve a 2×2 LCP in Python
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Consider LCP given in ``examples/lcp_2x2``: find :math:`z \ge 0`
 with :math:`w = q + Mz \ge 0` and :math:`z^\top w = 0`, where
@@ -52,10 +55,10 @@ with :math:`w = q + Mz \ge 0` and :math:`z^\top w = 0`, where
 The solution is exact: :math:`z = (\frac{2}{3}, \frac{2}{3})`, with :math:`w = 0`.
 
 
-Find a Nash equilibrium from the command line
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+2) Find a Nash equilibrium from the CLI
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Find Nash equilibria using the Lemke–Howson method for the bimatrix game
+Find Nash equilibria with the Lemke–Howson method for the bimatrix game
 in ``examples/game``, where the payoff matrices are
 
 .. math::
