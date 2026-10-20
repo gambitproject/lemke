@@ -15,7 +15,7 @@ computation in game theory, and it builds on the work of
 Features
 --------
 - Lemke's algorithm for linear complementarity problems,
-  with a covering vector ``d``;
+  with a covering vector :math:`d`;
 - Lexicographic minimum ratio test to handle degenerate problems;
 - Arbitrary precision with integer pivoting;
 - Lemke–Howson and the tracing procedure for bimatrix games;
@@ -23,17 +23,18 @@ Features
 - Command-line tools: ``lemke``, ``bimatrix`` and ``randomstart``.
 
 
-Examples
---------
+Quick examples
+--------------
 
-**1. Solving a 2×2 LCP in Python.**
+Solve a 2×2 LCP in Python
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Find :math:`z \ge 0` with :math:`w = q + Mz \ge 0` and
-:math:`z^\top w = 0`, where
+Consider LCP given in ``examples/lcp_2x2``: find :math:`z \ge 0`
+with :math:`w = q + Mz \ge 0` and :math:`z^\top w = 0`, where
 
 .. math::
 
-   M = \begin{pmatrix} 2 & 1 \\ 1 & 2 \end{pmatrix},
+   M = \begin{pmatrix} \frac{1}{2} & 1 \\ -1 & \frac{5}{2} \end{pmatrix},
    \qquad
    q = \begin{pmatrix} -1 \\ -1 \end{pmatrix}.
 
@@ -41,23 +42,18 @@ Find :math:`z \ge 0` with :math:`w = q + Mz \ge 0` and
 
    >>> from fractions import Fraction
    >>> from lemke.lemke import lcp, runlemke
-   >>> m = [
-   ...   [Fraction(2), Fraction(1)],
-   ...   [Fraction(1), Fraction(2)],
-   ... ]
-   >>> q = [Fraction(-1), Fraction(-1)]
-   >>> d = [Fraction(1), Fraction(1)]  # covering vector
-   >>> problem = lcp(m, q, d)
+   >>> problem = lcp.from_file("examples/lcp_2x2")
    >>> result = runlemke(lcp=problem)
    >>> result.success
    True
    >>> result.z
-   (Fraction(1, 3), Fraction(1, 3))
+   (Fraction(2, 3), Fraction(2, 3))
 
-The solution is exact: :math:`z = (1/3,\, 1/3)`, with :math:`w = 0`.
+The solution is exact: :math:`z = (\frac{2}{3}, \frac{2}{3})`, with :math:`w = 0`.
 
 
-**2. Computing a Nash equilibrium from the command line.**
+Find a Nash equilibrium from the command line
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Find Nash equilibria using the Lemke–Howson method for the bimatrix game
 in ``examples/game``, where the payoff matrices are
@@ -73,6 +69,7 @@ in ``examples/game``, where the payoff matrices are
 
    $ bimatrix lh examples/game
 
+The algorithm runs for all labels by default and finds 2 equilibria:
 
 .. code-block:: text
 
@@ -85,8 +82,6 @@ in ``examples/game``, where the payoff matrices are
         supports: [0][0] found by labels [1, 3]
     (0,1),(0,1)
         supports: [1][1] found by labels [2, 4]
-
-The algorithm runs for all labels by default and finds 2 equilibria.
 
 
 Installation
