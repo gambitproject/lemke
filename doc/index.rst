@@ -106,7 +106,7 @@ If you use lemke in a scientific publication, you can use the following citation
 
    Von Stengel, B. (2026). *lemke: Lemke's algorithm for linear complementarity
    problems and bimatrix games*.
-   https://github.com/gambitproject/lemke
+   https://github.com/gambitproject/lemke.
 
 
 API documentation

@@ -32,4 +32,5 @@ html_theme_options = {
             "type": "fontawesome",
         }
     ],
+    "shorten_urls": False,
 }
