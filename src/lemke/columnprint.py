@@ -37,7 +37,7 @@ class columnprint:
             out += word
             if i < self.ncols - 1:
                 out += " "  # single spacing here
-        return out
+        return out.rstrip()
 
     # print integer i into the current column
     def iprint(self, i):  # colipr(i)
