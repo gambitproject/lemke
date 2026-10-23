@@ -82,7 +82,8 @@ then load it:
    >>> print(problem.n)
    2
 
-See details about how the input file should be formatted on the :doc:`file_formats` page.
+See details about how the input file should be formatted on
+the :doc:`file formats<../file_formats>` page.
 
 
 Solving the problem
