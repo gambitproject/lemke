@@ -27,7 +27,7 @@ Usage examples
 --------------
 
 Here are two quick examples of using lemke.
-You can view more detailed explanations in the :doc:`tutorials`.
+You can view more detailed explanations in the :doc:`tutorials/index`.
 
 1) Solve a 2×2 LCP in Python
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
