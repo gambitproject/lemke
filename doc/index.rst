@@ -43,9 +43,16 @@ with :math:`w = q + Mz \ge 0` and :math:`z^\top w = 0`, where
 
 .. doctest::
 
-   >>> from fractions import Fraction
+   >>> from fractions import Fraction as F
    >>> from lemke.lemke import lcp, runlemke
-   >>> problem = lcp.from_file("examples/lcp_2x2")
+   >>> problem = lcp(
+   ...    M=[
+   ...       [F(1, 2), F(1)],
+   ...       [F(-1), F(5, 2)],
+   ...    ],
+   ...    q=[F(-1), F(-1)],
+   ...    d=[F(1), F(1)],
+   ... )
    >>> result = runlemke(lcp=problem)
    >>> result.success
    True
@@ -67,10 +74,24 @@ in ``examples/game``, where the payoff matrices are
    \qquad
    B = \begin{pmatrix} 2 & 0 \\ 0 & 7 \end{pmatrix}.
 
+Save the following as ``game_file``::
+
+   # m,n=
+   2 2
+
+   # A=
+   3 0
+   0 2
+
+   # B=
+   2 0
+   0 7
+
+Then run:
 
 .. code-block:: console
 
-   $ bimatrix lh examples/game
+   $ bimatrix lh game_file
 
 The algorithm runs for all labels by default and finds 2 equilibria:
 
