@@ -133,10 +133,11 @@ If you use lemke in a scientific publication, you can use the following citation
    https://github.com/gambitproject/lemke.
 
 
-API documentation
------------------
+Useful links
+------------
 
 .. toctree::
    :maxdepth: 2
 
    api
+   file_formats
