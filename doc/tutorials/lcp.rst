@@ -57,8 +57,8 @@ Pass the matrix ``M`` (as a list of its rows) and the vectors ``q`` and ``d``:
 
 .. note::
 
-   Every entry must be an exact rational (:class:`fractions.Fraction`).
-   Other types cannot be passed directly.
+   Entries must be exact rationals, such as Python integers or
+   :class:`fractions.Fraction` instances. Floats are not supported.
 
 2) From a file
 ~~~~~~~~~~~~~~
