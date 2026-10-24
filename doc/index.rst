@@ -141,3 +141,4 @@ Useful links
 
    api
    file_formats
+   tutorials/index

@@ -619,12 +619,15 @@ class PrintingCallback(LemkeCallback):
 
     def __init__(
         self,
-        stream=sys.stdout,
+        stream=None,
         verbose=False,
         z0=False,
         lexstats=False,
     ):
-        self.stream = stream
+        if stream is not None:
+            self.stream = stream
+        else:
+            self.stream = sys.stdout
         self.verbose = verbose
         self.z0 = z0
         self.lexstats = lexstats

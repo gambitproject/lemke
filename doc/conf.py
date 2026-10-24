@@ -3,6 +3,7 @@ copyright = "2026, Bernhard von Stengel"
 author = "Bernhard von Stengel"
 
 extensions = [
+    "matplotlib.sphinxext.plot_directive",
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
     "sphinx.ext.doctest",
@@ -34,3 +35,6 @@ html_theme_options = {
     ],
     "shorten_urls": False,
 }
+
+plot_html_show_source_link = False
+plot_html_show_formats = False
