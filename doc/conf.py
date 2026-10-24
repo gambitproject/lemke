@@ -5,6 +5,8 @@ author = "Bernhard von Stengel"
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
+    "sphinx.ext.doctest",
+    "sphinx.ext.mathjax",
     "sphinx.ext.napoleon",
     "sphinx.ext.viewcode",
 ]
@@ -30,4 +32,5 @@ html_theme_options = {
             "type": "fontawesome",
         }
     ],
+    "shorten_urls": False,
 }
