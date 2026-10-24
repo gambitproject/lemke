@@ -44,7 +44,7 @@ The function also prints the parameters it was called with:
 
 .. code-block:: python
 
-   numpoints=200 accuracy=20 higherdim=3 naiveplot=False
+   numpoints=300 accuracy=30 higherdim=3 naiveplot=False
 
 
 Changing the accuracy
