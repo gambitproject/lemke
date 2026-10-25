@@ -13,4 +13,6 @@ pip install git+https://github.com/gambitproject/lemke.git
 ## Documentation
 
 Full documentation is built with Sphinx from the `doc/` directory and
-published on Read the Docs.
+published on Read the Docs:
+
+https://gambitproject.readthedocs.io/projects/lemke/
