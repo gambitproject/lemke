@@ -6,7 +6,7 @@ compute its Nash equilibria with the Lemke-Howson algorithm and with the
 tracing procedure.
 
 In a *bimatrix game*, the row player has :math:`m` pure strategies, the
-column player has :math:`n`, and the payoffs are given by two
+column player has :math:`n` pure strategies, and the payoffs are given by two
 :math:`m \times n` matrices :math:`A` (row player) and :math:`B` (column
 player). All payoffs are stored as exact fractions.
 
