@@ -120,6 +120,8 @@ It is **not** yet available on PyPI, but can be installed directly from GitHub:
    pip install git+https://github.com/gambitproject/lemke.git
 
 
+.. _licence-citing:
+
 Citing lemke
 ------------
 
@@ -142,3 +144,4 @@ Useful links
    api
    file_formats
    tutorials/index
+   contributing
