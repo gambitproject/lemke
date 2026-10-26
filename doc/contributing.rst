@@ -68,7 +68,7 @@ Development Setup
 
       python -m venv .venv
       source .venv/bin/activate
-      pip install ".[dev,test,doc]"
+      pip install -e ".[dev,test,doc]"
 
 4. Verify that the test suite passes:
 
