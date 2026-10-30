@@ -4,6 +4,8 @@ author = "Bernhard von Stengel"
 
 extensions = [
     "matplotlib.sphinxext.plot_directive",
+    "sphinx_click",
+    "sphinx_design",
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
     "sphinx.ext.doctest",
