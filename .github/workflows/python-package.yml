@@ -40,3 +40,18 @@ jobs:
 
       - name: Run tests
         run: pytest
+
+  doctest:
+    name: Doctest (Sphinx)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+
+      - name: Install dependencies
+        run: pip install ".[doc]"
+
+      - name: Run Sphinx doctests
+        run: sphinx-build -b doctest doc doc/_build/doctest
