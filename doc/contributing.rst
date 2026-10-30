@@ -172,6 +172,17 @@ repository root and open http://127.0.0.1:8000 in your browser:
    Stop the server with ``Ctrl+C``.
 
 
+Running Doctests
+~~~~~~~~~~~~~~~~
+
+Code examples in the documentation and in docstrings are tested, so they must
+stay correct. Run the doctests before submitting changes that touch either:
+
+.. code-block:: bash
+
+   sphinx-build -b doctest doc doc/_build/doctest
+
+
 Licence
 -------
 
