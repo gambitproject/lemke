@@ -22,7 +22,7 @@ Plot 300 points, rounded to multiples of 1/30 that sum to 1:
 
    $ randomstart --numpoints 300 --accuracy 30
 
-   numpoints=300 accuracy=30 higherdim=3 naiveplot=False
+   num_points=300 accuracy=30 higher_dim=3 naive_plot=False
 
 .. plot::
    :include-source: false
@@ -31,7 +31,7 @@ Plot 300 points, rounded to multiples of 1/30 that sum to 1:
    from lemke.randomstart import plot_simplex
 
    random.seed(1)
-   plot_simplex(numpoints=300, accuracy=30)
+   plot_simplex(num_points=300, accuracy=30)
 
 .. note::
 
@@ -58,5 +58,5 @@ components:
 
    $ randomstart --numpoints 300 --accuracy 30 --higherdim 6
 
-   numpoints=300 accuracy=30 higherdim=6 naiveplot=False
+   num_points=300 accuracy=30 higher_dim=6 naive_plot=False
    show positions 2 .. 4 of 0 .. 5

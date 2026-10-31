@@ -81,27 +81,27 @@ def test_tableau_initial_basis():
     t = Tableau(get_empty_lcp(n))
     for i in range(2 * n + 1):
         if i <= n:
-            assert t.bascobas[i] >= n, f"Z({i}) should be cobasic"
+            assert t.bas_cobas[i] >= n, f"Z({i}) should be cobasic"
         else:
-            assert t.bascobas[i] < n, f"W({i}) should be basic"
+            assert t.bas_cobas[i] < n, f"W({i}) should be basic"
 
 
 def test_tableau_bascobas_whichvar_are_inverses():
     n = 3
     t = Tableau(get_empty_lcp(n))
     for i in range(2 * n + 1):
-        assert t.bascobas[t.whichvar[i]] == i
-        assert t.whichvar[t.bascobas[i]] == i
+        assert t.bas_cobas[t.which_var[i]] == i
+        assert t.which_var[t.bas_cobas[i]] == i
 
 
-# ---   VARTOA   ----------------------------------------------------
-def test_vartoa():
+# ---   VAR_NAME   ----------------------------------------------------
+def test_var_name():
     n = 3
     t = Tableau(get_empty_lcp(n))
-    assert t.vartoa(0) == "z0"
-    assert t.vartoa(n + 1) == "w1"
-    assert t.vartoa(n) == f"z{n}"
-    assert t.vartoa(n + n) == f"w{n}"
+    assert t.var_name(0) == "z0"
+    assert t.var_name(n + 1) == "w1"
+    assert t.var_name(n) == f"z{n}"
+    assert t.var_name(n + n) == f"w{n}"
 
 
 # ---   COMPLEMENT   ------------------------------------------------
@@ -133,16 +133,16 @@ def test_pivot_correctly_swaps_basis_variables():
     t = Tableau(m)
 
     enter = 0              # z0 (cobasic in col 0)
-    leave = t.whichvar[0]  # w1 (basic in row 0)
+    leave = t.which_var[0]  # w1 (basic in row 0)
 
     t.pivot(leave, enter)
 
-    assert t.bascobas[enter] < t.n   # entering variable is basic
-    assert t.bascobas[leave] >= t.n  # leaving variable is cobasic
+    assert t.bas_cobas[enter] < t.n   # entering variable is basic
+    assert t.bas_cobas[leave] >= t.n  # leaving variable is cobasic
 
 
-# ---   LEXMINVAR   -------------------------------------------------
-def test_lexminvar_without_positive_entry():
+# ---   LEX_MIN_VAR   -------------------------------------------------
+def test_lex_min_var_without_positive_entry():
     t = Tableau(get_empty_lcp(2))
 
     t.A[0][0] = -1
@@ -151,7 +151,7 @@ def test_lexminvar_without_positive_entry():
     enter = 0  # z0, cobasic in col 0
 
     with pytest.raises(RayTermination):
-        t.lexminvar(enter)
+        t.lex_min_var(enter)
 
 
 @pytest.mark.parametrize(
@@ -161,15 +161,15 @@ def test_lexminvar_without_positive_entry():
         pytest.param([2, 0, 0, 6], [2, 0, 0, 4], id="multiple_candidates"),
     ],
 )
-def test_lexminvar_with_positive_entry(row0, row1):
+def test_lex_min_var_with_positive_entry(row0, row1):
     t = Tableau(get_empty_lcp(2))
     t.A[0] = row0
     t.A[1] = row1
 
     enter = 0  # z0, cobasic in col 0
-    leave, z0leave = t.lexminvar(enter)
+    leave, z0leave = t.lex_min_var(enter)
 
-    assert leave == t.whichvar[1]  # w2 leaves
+    assert leave == t.which_var[1]  # w2 leaves
     assert z0leave is False
 
 

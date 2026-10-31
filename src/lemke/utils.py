@@ -1,4 +1,4 @@
-# file utilities
+"""File utilities: reading input files and converting words to exact numbers."""
 
 import fractions
 from decimal import (
@@ -6,51 +6,51 @@ from decimal import (
     Decimal,
     InvalidOperation,
 )
+from pathlib import Path
 
 import numpy as np
+import numpy.typing as npt
 
 # global constants, mutable
 # https://stackoverflow.com/questions/1977362/how-to-create-module-wide-variables-in-python
 DEFAULT_DECIMALS = 4
-MAXDECIMALS = 20
-# roundingwarn = False
+MAX_DECIMALS = 20
+# ROUNDING_WARN = False
 
 
-commentchars = "#%*"  # lines starting with these are ignored
+COMMENT_CHARS = "#%*"  # lines starting with these are ignored
 
 
-def _validate_decimals(decimals):
+def _validate_decimals(decimals: int) -> None:
     if not isinstance(decimals, int):
         raise TypeError("decimals must be an integer")
-    if decimals < 0 or decimals > MAXDECIMALS:
+    if decimals < 0 or decimals > MAX_DECIMALS:
         raise ValueError(
-            f"{decimals} as number of decimals not in allowed range 0 to {MAXDECIMALS}"
+            f"{decimals} as number of decimals not in allowed range 0 to {MAX_DECIMALS}"
         )
 
 
-# read file into list of line-strings
-# truncate leading and trailing blanks
-# ignore blank lines and lines starting with commentchars
-def _strip_comments(filename):
+def _strip_comments(filename: str | Path) -> list[str]:
+    """Read file into list of line-strings, truncate leading and trailing blanks,
+    ignore blank lines and lines starting with COMMENT_CHARS."""
+
     # http://stackoverflow.com/questions/12330522/reading-a-file-without-newlines
-    newlist = []
-    with open(filename) as temp:
-        temp = temp.read().splitlines()
-        # strip comments
-        for line in temp:
-            line = line.strip()
-            if line != "" and line[0] not in commentchars:
-                newlist.append(line)
-    return newlist
-
-
-# convert lines to words
-def _to_words(lines):
-    words = []
+    new_list: list[str] = []
+    with open(filename) as file:
+        lines = file.read().splitlines()
+    # strip comments
     for line in lines:
-        ell = line.split()
-        for w in ell:
-            words.append(w)
+        line = line.strip()
+        if line != "" and line[0] not in COMMENT_CHARS:
+            new_list.append(line)
+    return new_list
+
+
+def _to_words(lines: list[str]) -> list[str]:
+    """Convert lines to words."""
+    words: list[str] = []
+    for line in lines:
+        words.extend(line.split())
     return words
 
 
@@ -63,7 +63,7 @@ def _to_fraction(s: str, decimals: int) -> fractions.Fraction:
     """
     if not isinstance(s, str):
         raise TypeError(
-            f"tofraction expects a string, got {type(s).__name__}: {s!r}"
+            f"_to_fraction expects a string, got {type(s).__name__}: {s!r}"
         )
 
     if "." in s:
@@ -81,20 +81,31 @@ def _to_fraction(s: str, decimals: int) -> fractions.Fraction:
         raise ValueError(f"{s!r} is not a valid number or fraction: {e}") from e
 
 
-# create n-vector of fractions from words[start,start+n)
-def _to_vector(n, words, start, decimals):
+def _to_vector(
+    n: int,
+    words: list[str],
+    start: int,
+    decimals: int,
+) -> npt.NDArray[np.object_]:
+    """Create n-vector of fractions from words[start,start+n)."""
     vector = np.zeros(n, dtype=fractions.Fraction)
     for i in range(n):
         vector[i] = _to_fraction(words[start + i], decimals)
     return vector
 
 
-# create (m,n)-matrix of fractions from words[start,start+m*n)
-def _to_matrix(m, n, words, start, decimals):
-    C = np.zeros((m, n), dtype=fractions.Fraction)
+def _to_matrix(
+    m: int,
+    n: int,
+    words: list[str],
+    start: int,
+    decimals: int,
+) -> npt.NDArray[np.object_]:
+    """Create (m,n)-matrix of fractions from words[start,start+m*n)."""
+    matrix = np.zeros((m, n), dtype=fractions.Fraction)
     k = start
     for i in range(m):
         for j in range(n):
-            C[i][j] = _to_fraction(words[k], decimals)
+            matrix[i][j] = _to_fraction(words[k], decimals)
             k += 1
-    return C
+    return matrix

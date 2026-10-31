@@ -29,18 +29,18 @@ from lemke.bimatrix import Bimatrix, _uniform
 FIXTURES_DIR = Path("tests/fixtures/bimatrix")
 
 
-def lh_solver(G: Bimatrix) -> list[list[Fr]]:
+def lh_solver(game: Bimatrix) -> list[list[Fr]]:
     """Run LH algorithm & return the list of equilibria found."""
 
-    lh_eqs_dict = G.LH("1-" + str(G.A.numrows + G.A.numcolumns))
+    lh_eqs_dict = game.lh("1-" + str(game.A.num_rows + game.A.num_columns))
     return [list(eq_key) for eq_key in lh_eqs_dict]
 
 
 def trace_uniform_prior(game: Bimatrix) -> list[list[Fr]]:
     """Copied from bimatrix.py, but explicitly returns equilibria."""
 
-    m = game.A.numrows
-    n = game.A.numcolumns
+    m = game.A.num_rows
+    n = game.A.num_columns
 
     xprior = _uniform(m)
     yprior = _uniform(n)
@@ -60,8 +60,8 @@ def trace_random_priors(
 
     if trace <= 0:
         raise ValueError("Number of priors must be a positive integer")
-    m = game.A.numrows
-    n = game.A.numcolumns
+    m = game.A.num_rows
+    n = game.A.num_columns
     trset = {}  # dict of equilibria, how often found
 
     for k in range(trace):
@@ -80,10 +80,10 @@ def trace_random_priors(
     return [list(eq) for eq in trset]
 
 
-def build_pygambit_bimatrix_game(G: Bimatrix) -> pygambit.Game:
-    A = G.A.matrix
-    B = G.B.matrix
-    g = pygambit.Game.new_table([G.A.numrows, G.A.numcolumns])
+def build_pygambit_bimatrix_game(game: Bimatrix) -> pygambit.Game:
+    A = game.A.matrix
+    B = game.B.matrix
+    g = pygambit.Game.new_table([game.A.num_rows, game.A.num_columns])
     p1, p2 = g.players
     for i, row in enumerate(A):
         for j, val in enumerate(row):
@@ -219,12 +219,12 @@ CASES += INFINITE_NE_CASES
 @pytest.mark.parametrize("test_case", CASES)
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_with_max_regret(test_case: GameTestCase, solver, subtests):
-    G = test_case.factory()
-    eqs = solver(G)
+    game = test_case.factory()
+    eqs = solver(game)
 
-    m = G.A.numrows
+    m = game.A.num_rows
 
-    pygambit_game = build_pygambit_bimatrix_game(G)
+    pygambit_game = build_pygambit_bimatrix_game(game)
 
     for eq_idx, eq in enumerate(eqs):
         x = eq[:m]
@@ -242,8 +242,8 @@ def test_with_max_regret(test_case: GameTestCase, solver, subtests):
 def test_with_expected_results(test_case: GameTestCase, solver, subtests):
     """Tests both algorithms by comparing the output to the pre-computed unique solution."""
 
-    G = test_case.factory()
-    eqs = solver(G)
+    game = test_case.factory()
+    eqs = solver(game)
 
     with subtests.test("Only one equilibrium"):
         assert len(eqs) == 1
@@ -266,15 +266,15 @@ def test_with_expected_results(test_case: GameTestCase, solver, subtests):
 def test_with_pygambit_enummixed(test_case: GameTestCase, solver, subtests):
     """Tests both algorithms against pygambit solutions."""
 
-    G = test_case.factory()
-    eqs = solver(G)
+    game = test_case.factory()
+    eqs = solver(game)
 
-    g = build_pygambit_bimatrix_game(G)
-    p1, p2 = g.players
+    pygambit_game = build_pygambit_bimatrix_game(game)
+    p1, p2 = pygambit_game.players
 
     # enummixed_solve() is used to get all equilibria
     pygambit_eqs = []
-    for eq in pygambit.nash.enummixed_solve(g, rational=True).equilibria:
+    for eq in pygambit.nash.enummixed_solve(pygambit_game, rational=True).equilibria:
         flat_eq = [s[1] for s in eq[p1]] + [s[1] for s in eq[p2]]
         pygambit_eqs.append([Fr(x) for x in flat_eq])  # convert to Fraction (it's Rational)
 

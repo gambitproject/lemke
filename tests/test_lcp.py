@@ -17,7 +17,7 @@ from typing import Callable
 
 import pytest
 
-from lemke.lemke import Lcp, runlemke
+from lemke.lemke import Lcp, run_lemke
 
 FIXTURES_DIR = Path("tests/fixtures/lcp")
 
@@ -180,7 +180,7 @@ def test_with_expected_results(test_case: LCPTestCase, subtests):
     """
 
     lcp_instance = test_case.factory()
-    result = runlemke(lcp=lcp_instance)
+    result = run_lemke(lcp=lcp_instance)
 
     with subtests.test("Solution status"):
         assert result.success
@@ -214,7 +214,7 @@ def test_with_lcp_conditions(test_case: LCPTestCase, subtests):
     """
 
     lcp_instance = test_case.factory()
-    result = runlemke(lcp=lcp_instance)
+    result = run_lemke(lcp=lcp_instance)
 
     n = lcp_instance.n
     z0 = result.z0
@@ -289,6 +289,6 @@ def test_failure(test_case: LCPTestCase):
     """
     lcp_instance = test_case.factory()
 
-    result = runlemke(lcp=lcp_instance)
+    result = run_lemke(lcp=lcp_instance)
 
     assert result.success is False

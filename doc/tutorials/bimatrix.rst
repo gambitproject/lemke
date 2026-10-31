@@ -45,7 +45,7 @@ then combine them:
    ...       [F(0), F(7)],
    ...    ]),
    ... )
-   >>> print(game.A.numrows)
+   >>> print(game.A.num_rows)
    2
 
 A :class:`~lemke.bimatrix.PayoffMatrix` also records useful facts about its entries,
@@ -85,7 +85,7 @@ then load it:
 .. doctest::
 
    >>> game = Bimatrix.from_file("examples/game")
-   >>> print(game.A.numrows)
+   >>> print(game.A.num_rows)
    2
 
 See details about how the input file should be formatted on
@@ -97,12 +97,12 @@ Lemke-Howson
 
 The Lemke-Howson algorithm finds one equilibrium for each starting *label*.
 There are :math:`m + n` labels, one for each pure strategy of either player.
-:meth:`~lemke.bimatrix.Bimatrix.LH` takes a string saying which labels to
+:meth:`~lemke.bimatrix.Bimatrix.lh` takes a string saying which labels to
 try, for example ``"1-3,7"``. You can also pass ``"1-"`` for all labels:
 
 .. doctest::
 
-   >>> result = game.LH("1-")
+   >>> result = game.lh("1-")
    label 1 found eq (1,0),(1,0)
        supports: [0][0]
    label 2 found eq (0,1),(0,1)

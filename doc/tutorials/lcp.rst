@@ -89,16 +89,16 @@ the :doc:`file formats<../file_formats>` page.
 Solving the problem
 -------------------
 
-Pass the problem to :func:`~lemke.lemke.runlemke`:
+Pass the problem to :func:`~lemke.lemke.run_lemke`:
 
 .. doctest::
 
-   >>> from lemke.lemke import runlemke
-   >>> result = runlemke(lcp=problem)
+   >>> from lemke.lemke import run_lemke
+   >>> result = run_lemke(lcp=problem)
    >>> print(result.success)
    True
 
-:func:`~lemke.lemke.runlemke` always returns an :class:`~lemke.lemke.LcpResult`,
+:func:`~lemke.lemke.run_lemke` always returns an :class:`~lemke.lemke.LcpResult`,
 whether or not a solution was found. Its fields are the same in both cases,
 so you must check :attr:`~lemke.lemke.LcpResult.success` field first.
 
@@ -156,7 +156,7 @@ It is still a valid solution. For example:
    ...    q=[F(-1), F(0)],
    ...    d=[F(1), F(1)],
    ... )
-   >>> result = runlemke(lcp=problem)
+   >>> result = run_lemke(lcp=problem)
    >>> print(result.z)
    (Fraction(1, 1), Fraction(0, 1))
    >>> print(result.w)
@@ -195,7 +195,7 @@ never be non-negative:
    ...   q=[F(-1)],
    ...   d=[F(1)],
    ... )
-   >>> result = runlemke(lcp=problem)
+   >>> result = run_lemke(lcp=problem)
    >>> print(result.success)
    False
    >>> print(result.ray_entering_variable)
@@ -225,7 +225,7 @@ When ``success`` is ``False``:
 Watching the algorithm
 ----------------------
 
-To see what happens at each pivot, pass a callback to :func:`~lemke.lemke.runlemke`.
+To see what happens at each pivot, pass a callback to :func:`~lemke.lemke.run_lemke`.
 The ready-made :class:`~lemke.lemke.PrintingCallback` prints the LCP, the
 tableaus and the chosen leaving and entering variables:
 
@@ -233,7 +233,7 @@ tableaus and the chosen leaving and entering variables:
 
    >>> from lemke.lemke import PrintingCallback
    >>> problem = Lcp.from_file("examples/lcp_2x2")
-   >>> result = runlemke(lcp=problem, callback=PrintingCallback())
+   >>> result = run_lemke(lcp=problem, callback=PrintingCallback())
    verbose=False z0=False lexstats=False
    n= 2
    M=
@@ -292,7 +292,7 @@ you can override :func:`~lemke.lemke.LemkeCallback.on_pivot_start`:
    >>> class LogEnteringVariables(LemkeCallback):
    ...    def on_pivot_start(self, tableau, leave, enter):
    ...        print(enter)
-   >>> result = runlemke(lcp=problem, callback=LogEnteringVariables())
+   >>> result = run_lemke(lcp=problem, callback=LogEnteringVariables())
    z0
    z2
    z1

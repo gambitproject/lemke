@@ -4,6 +4,8 @@ import fractions
 import math  # gcd
 import sys
 from dataclasses import dataclass
+from pathlib import Path
+from typing import TextIO
 
 import click
 
@@ -22,7 +24,7 @@ class Lcp:
     Parameters
     ----------
     M : list of list of int or fractions.Fraction
-        Square matrix of shape `(n, n)`, given as the list of its `n` rows,
+        Square matrix `M` of shape `(n, n)`, given as the list of its `n` rows,
         so ``M[i][j]`` is the entry in row `i` and column `j`.
     q : list of int or fractions.Fraction
         Vector of length `n`.
@@ -51,14 +53,23 @@ class Lcp:
     2
     """
 
-    def __init__(self, M, q, d):
+    def __init__(
+        self,
+        M: list[list[int | fractions.Fraction]],
+        q: list[int | fractions.Fraction],
+        d: list[int | fractions.Fraction],
+    ) -> None:
         self.M = M
         self.q = q
         self.d = d
-        self.n = len(d)
+        self.n: int = len(d)
 
     @classmethod
-    def from_file(cls, filename, decimals=utils.DEFAULT_DECIMALS):
+    def from_file(
+        cls,
+        filename: str | Path,
+        decimals: int = utils.DEFAULT_DECIMALS,
+    ) -> "Lcp":
         """Create an LCP instance from a text file.
 
         Read about how input files should be formatted
@@ -71,7 +82,7 @@ class Lcp:
         decimals : int, optional
             Number of decimal places to which numbers written as decimals
             (e.g. ``0.145``) are rounded before conversion to fractions.
-            Must be between 0 and `utils.MAXDECIMALS`.
+            Must be between 0 and `utils.MAX_DECIMALS`.
             Default is `utils.DEFAULT_DECIMALS`.
 
         Returns
@@ -110,13 +121,13 @@ class Lcp:
                 f"not {words[0]!r}"
             )
         n = int(words[1])
-        needfracs = n * n + 2 * n
-        if len(words) != needfracs + 5:
+        need_fracs = n * n + 2 * n
+        if len(words) != need_fracs + 5:
             # printout("in lcp file '",filename,"':")
             raise ValueError(
                 f"in lcp file {filename!r}: "
                 f"n={n}, need keywords 'M=' 'q=' 'd=' and "
-                f"n*n + n + n = {needfracs} fractions, got {len(words) - 5}"
+                f"n*n + n + n = {need_fracs} fractions, got {len(words) - 5}"
             )
         M, q, d = None, None, None
         k = 2  # index in words
@@ -146,7 +157,7 @@ class Lcp:
         q = self.q
         d = self.d
         m = columnprint.ColumnPrint(n)
-        m.makeLeft(0)
+        m.make_left(0)
         m.sprint("M=")
         m.newline()
         for i in range(n):
@@ -162,7 +173,7 @@ class Lcp:
             m.sprint(str(d[i]))
         # printout("M[0][0]", type(M[0][0]))
         return "n= " + str(n) + "\n" + str(m)
-    #  end of class lcp
+    #  end of class Lcp
 
 
 class Tableau:
@@ -174,7 +185,7 @@ class Tableau:
 
     Parameters
     ----------
-    Mqd : Lcp
+    lcp : Lcp
         The LCP instance to build the tableau from.
 
     Attributes
@@ -186,142 +197,139 @@ class Tableau:
         (columns correspond to `n + 1` cobasic variables, plus RHS).
     determinant : int
         Current tableau determinant (always positive after pivoting).
-    scalefactor : list of int
+    scale_factor : list of int
         Per-column scale factors (LCM of denominators) used to keep
         the tableau in exact integer arithmetic.
-    bascobas : list of int
+    bas_cobas : list of int
         Location for each variable index: its tableau row (if basic) or
         ``n + column`` (if cobasic).
-    whichvar : list of int
-        Inverse of `bascobas`: which variable occupies each row or column.
-    pivotcount : int
+    which_var : list of int
+        Inverse of `bas_cobas`: which variable occupies each row or column.
+    pivot_count : int
         Number of pivots performed so far.
-    lextested, lexcomparisons : list of int
+    lex_tested, lex_comparisons : list of int
         Per-column statistics from the lexicographic minimum-ratio test.
     """
 
-    def __init__(self, Mqd):
-        self.n = Mqd.n
+    def __init__(self, lcp: Lcp) -> None:
+        self.n: int = lcp.n
         n = self.n
-        self.scalefactor = [0] * (n + 2)  # 0 for z0, n+1 for RHS
-        # A = tableau, long integer entries
-        # self.A = np.zeros( (n,n+2), dtype=object)
-        self.A = [[]] * n
-        for i in range(n):
-            self.A[i] = [0] * (n + 2)
-        self.determinant = 1
-        self.lextested = [0] * (n + 1)
-        self.lexcomparisons = [0] * (n + 1)
-        self.pivotcount = 0
+
+        self.scale_factor: list[int] = [0] * (n + 2)  # 0 for z0, n+1 for RHS
+        # tableau, long integer entries
+        self.A: list[list[int]] = [[0] * (n + 2) for _ in range(n)]
+        self.determinant: int = 1
+        self.lex_tested: list[int] = [0] * (n + 1)
+        self.lex_comparisons: list[int] = [0] * (n + 1)
+        self.pivot_count: int = 0
 
         # variable encodings: VARS = 0..2n = Z(0) .. Z(n) W(1) .. W(n)
         # tableau columns: RHS n+1
-        # bascobas[v] in 0..n-1: basic,   bascobas[v]   = tableau row
-        # bascobas[v] in n..2n:  cobasic, bascobas[v]-n = tableau col
-        self.bascobas = [0] * (2 * n + 1)
-        # whichvar inverse of bascobas, shows which basic/cobasic vars
-        self.whichvar = [0] * (2 * n + 1)
+        # bas_cobas[v] in 0..n-1: basic,   bas_cobas[v]   = tableau row
+        # bas_cobas[v] in n..2n:  cobasic, bas_cobas[v]-n = tableau col
+        self.bas_cobas: list[int] = [0] * (2 * n + 1)
+        # which_var inverse of bas_cobas, shows which basic/cobasic vars
+        self.which_var: list[int] = [0] * (2 * n + 1)
         for i in range(n + 1):  # variables Z(i) all cobasic
-            self.bascobas[i] = n + i
-            self.whichvar[n + i] = i
+            self.bas_cobas[i] = n + i
+            self.which_var[n + i] = i
         for i in range(n):  # variables W(i+1) all basic
-            self.bascobas[n + 1 + i] = i
-            self.whichvar[i] = n + 1 + i
+            self.bas_cobas[n + 1 + i] = i
+            self.which_var[i] = n + 1 + i
         # determine scale factors, lcm of denominators
         for j in range(n + 2):
             factor = 1
             for i in range(n):
                 if j == 0:
-                    den = Mqd.d[i].denominator
+                    den = lcp.d[i].denominator
                 elif j == n + 1:  # RHS
-                    den = Mqd.q[i].denominator
+                    den = lcp.q[i].denominator
                 else:
-                    den = Mqd.M[i][j - 1].denominator
+                    den = lcp.M[i][j - 1].denominator
                 # least common multiple
                 factor *= den // math.gcd(factor, den)
-            self.scalefactor[j] = factor
-            # fill in column j of A
+            self.scale_factor[j] = factor
+            # fill in column j of the tableau
             for i in range(n):
                 if j == 0:
-                    den = Mqd.d[i].denominator
-                    num = Mqd.d[i].numerator
+                    den = lcp.d[i].denominator
+                    num = lcp.d[i].numerator
                 elif j == n + 1:  # RHS
-                    den = Mqd.q[i].denominator
-                    num = Mqd.q[i].numerator
+                    den = lcp.q[i].denominator
+                    num = lcp.q[i].numerator
                 else:
-                    den = Mqd.M[i][j - 1].denominator
-                    num = Mqd.M[i][j - 1].numerator
+                    den = lcp.M[i][j - 1].denominator
+                    num = lcp.M[i][j - 1].numerator
                 self.A[i][j] = (factor // den) * num
             self.determinant = -1
-        return
 
     def __str__(self):
         out = "Determinant: " + str(self.determinant)
         n = self.n
-        tabl = columnprint.ColumnPrint(n + 3)
-        tabl.makeLeft(0)
-        tabl.sprint("var")  # headers
+        table = columnprint.ColumnPrint(n + 3)
+        table.make_left(0)
+        table.sprint("var")  # headers
         for j in range(n + 1):
-            tabl.sprint(self.vartoa(self.whichvar[j + n]))
-        tabl.sprint("RHS")
-        tabl.sprint("scfa")  # scale factors
+            table.sprint(self.var_name(self.which_var[j + n]))
+        table.sprint("RHS")
+        table.sprint("scfa")  # scale factors
         for j in range(n + 2):
             if j == n + 1:  # RHS
-                tabl.sprint(str(self.scalefactor[n + 1]))
-            elif self.whichvar[j + n] > n:  # col  j  is some  W
-                tabl.sprint("1")
+                table.sprint(str(self.scale_factor[n + 1]))
+            elif self.which_var[j + n] > n:  # col  j  is some  W
+                table.sprint("1")
             else:
-                tabl.sprint(str(self.scalefactor[self.whichvar[j + n]]))
-        tabl.newline()  # blank line
+                table.sprint(str(self.scale_factor[self.which_var[j + n]]))
+        table.newline()  # blank line
         for i in range(n):
-            tabl.sprint(self.vartoa(self.whichvar[i]))
+            table.sprint(self.var_name(self.which_var[i]))
             for j in range(n + 2):
                 s = str(self.A[i][j])
                 if s == "0":
                     s = "."  # replace 0 by dot
-                tabl.sprint(s)
-        out += "\n" + str(tabl)
+                table.sprint(s)
+        out += "\n" + str(table)
         out += "\n" + "-----------------end of tableau-----------------"
         return out
 
-    def vartoa(self, v):
+    def var_name(self, v: int) -> str:
         """Return the display name of variable index `v`, e.g. "z0" or "w3"."""
         if v > self.n:
             return "w" + str(v - self.n)
         else:
             return "z" + str(v)
 
-    def assert_basic(self, v, info):
+    def assert_basic(self, v: int, info: str) -> None:
         """Assert that variable v is basic."""
-        if self.bascobas[v] >= self.n:
+        if self.bas_cobas[v] >= self.n:
             raise RuntimeError(
-                f"({info}) Cobasic variable {self.vartoa(v)} should be basic"
+                f"({info}) Cobasic variable {self.var_name(v)} should be basic"
             )
 
-    def assert_cobasic(self, v, info):
+    def assert_cobasic(self, v: int, info: str) -> None:
         """Assert that variable v is cobasic."""
-        if self.bascobas[v] < self.n:
+        if self.bas_cobas[v] < self.n:
             raise RuntimeError(
-                f"({info}) Basic variable {self.vartoa(v)} should be cobasic"
+                f"({info}) Basic variable {self.var_name(v)} should be cobasic"
             )
 
-    def test_table_vars(self):
-        """Check that `bascobas` and `whichvar` are consistent inverses."""
+    def test_table_vars(self) -> None:
+        """Check that `bas_cobas` and `which_var` are consistent inverses."""
         n = self.n
         for i in range(2 * n + 1):
-            if self.bascobas[self.whichvar[i]] != i:
+            if self.bas_cobas[self.which_var[i]] != i:
                 message = ""
                 # injective suffices
                 for j in range(2 * n + 1):
                     if j == i:
                         message += f"First problem for j={j}:\n"
                     message += (
-                        f"j={j} self.bascobas[j]={self.bascobas[j]} "
-                        f"self.whichvar[j]={self.whichvar[j]}\n"
+                        f"j={j} self.bas_cobas[j]={self.bas_cobas[j]} "
+                        f"self.which_var[j]={self.which_var[j]}\n"
                     )
-                raise RuntimeError(f"testtablvars() failed:\n{message}")
+                raise RuntimeError(f"test_table_vars() failed:\n{message}")
 
-    def complement(self, v):
+    def complement(self, v: int) -> int:
         """Return the complementary variable of `v` (Z(i) <-> W(i)).
 
         Parameters
@@ -347,7 +355,7 @@ class Tableau:
         else:
             return v + n
 
-    def lexminvar(self, enter):
+    def lex_min_var(self, enter: int) -> tuple[int, bool]:
         """Find the leaving variable via the lexicographic minimum-ratio test.
 
         Parameters
@@ -359,7 +367,7 @@ class Tableau:
         -------
         leave : int
             The leaving variable index.
-        z0leave : bool
+        z0_leave : bool
             True if ``z0`` is among the (possibly tied) leaving candidates,
             meaning the algorithm may terminate after this pivot.
 
@@ -372,19 +380,19 @@ class Tableau:
         n = self.n
         A = self.A
         self.assert_cobasic(enter, "Lexminvar")
-        col = self.bascobas[enter] - n  # entering tableau column
-        leavecand = []  # candidates(=rows) for leaving var
+        col = self.bas_cobas[enter] - n  # entering tableau column
+        leave_candidates: list[int] = []  # candidates(=rows) for leaving var
         for i in range(n):  # start with positives in entering col
             if A[i][col] > 0:
-                leavecand.append(i)
-        if not leavecand:
+                leave_candidates.append(i)
+        if not leave_candidates:
             raise RayTermination(enter, self)
-        if len(leavecand) == 1:  # single positive entering value
-            z0leave = self.bascobas[0] == leavecand[0]
+        if len(leave_candidates) == 1:  # single positive entering value
+            z0_leave = self.bas_cobas[0] == leave_candidates[0]
         # omitted from statistics: only one possible row
         # means no min-ratio test needed for leaving variable
-        #     self.lextested[0] += 1
-        #     self.lexcomparisons[0] += 1
+        #     self.lex_tested[0] += 1
+        #     self.lex_comparisons[0] += 1
 
         # as long as there is more than one leaving candidate,
         # perform a minimum ratio test for the columns
@@ -392,57 +400,61 @@ class Tableau:
         # That test has an easy known result if the test
         # column is basic, or equal to the entering variable.
         j = 0  # going through j = 0..n
-        while len(leavecand) > 1:
+        while len(leave_candidates) > 1:
             if j > n:  # impossible, perturbed RHS should have full rank
                 raise RuntimeError("lex-minratio test failed")
-            self.lextested[j] += 1
-            self.lexcomparisons[j] += len(leavecand)
-            testcol = n + 1 if j == 0 else self.bascobas[n + j] - n
-            if testcol != col:  # otherwise nothing changed
-                if testcol >= 0:
-                    # not a basic testcolumn: perform minimum ratio tests
-                    newcand = [leavecand[0]]
-                    # newcand  contains the new candidates
-                    for i in range(1, len(leavecand)):
+            self.lex_tested[j] += 1
+            self.lex_comparisons[j] += len(leave_candidates)
+            test_col = n + 1 if j == 0 else self.bas_cobas[n + j] - n
+            if test_col != col:  # otherwise nothing changed
+                if test_col >= 0:
+                    # not a basic test column: perform minimum ratio tests
+                    new_candidates = [leave_candidates[0]]
+                    # new_candidates contains the new candidates
+                    for i in range(1, len(leave_candidates)):
                         # investigate remaining candidates
                         # compare ratios via products
-                        tmp1 = A[newcand[0]][testcol] * A[leavecand[i]][col]
-                        tmp2 = A[leavecand[i]][testcol] * A[newcand[0]][col]
-                        # sgn = np.sign(tmp1 - tmp2)
-                        # if sgn==0:
+                        tmp1 = (
+                            A[new_candidates[0]][test_col]
+                            * A[leave_candidates[i]][col]
+                        )
+                        tmp2 = (
+                            A[leave_candidates[i]][test_col]
+                            * A[new_candidates[0]][col]
+                        )
                         if tmp1 == tmp2:  # new ratio is the same as before
-                            newcand.append(leavecand[i])
+                            new_candidates.append(leave_candidates[i])
                         elif tmp1 > tmp2:  # new smaller ratio detected: reset
-                            newcand = [leavecand[i]]
+                            new_candidates = [leave_candidates[i]]
                         # else : unchanged candidates
-                    leavecand = newcand
-                else:  # testcol < 0: W(j) basic, eliminate its row
-                    # from  leavecand  if in there, since testcol is
+                    leave_candidates = new_candidates
+                else:  # test_col < 0: W(j) basic, eliminate its row
+                    # from leave_candidates if in there, since test_col is
                     # the  jth  unit column (ratio too big)
-                    wj = self.bascobas[j + n]
-                    if wj in leavecand:
-                        leavecand.remove(wj)
-            # end of  if testcol != col
+                    wj = self.bas_cobas[j + n]
+                    if wj in leave_candidates:
+                        leave_candidates.remove(wj)
+            # end of  if test_col != col
             # check if  z0  among the first-col leaving candidates
             if j == 0:
-                z0leave = self.bascobas[0] in leavecand
+                z0_leave = self.bas_cobas[0] in leave_candidates
             j += 1  # end while
-        assert (len(leavecand) == 1)
-        return self.whichvar[leavecand[0]], z0leave
+        assert len(leave_candidates) == 1
+        return self.which_var[leave_candidates[0]], z0_leave
 
-    # end of lexminvar(enter)
+    # end of lex_min_var(enter)
 
-    def negate_col(self, col):
+    def negate_col(self, col: int) -> None:
         """Negate every entry in the given column of the tableau."""
         for i in range(self.n):
             self.A[i][col] = -self.A[i][col]
 
-    def negate_row(self, row):
+    def negate_row(self, row: int) -> None:
         """Negate every entry in the given row of the tableau."""
         for j in range(self.n + 2):
             self.A[row][j] = -self.A[row][j]
 
-    def pivot(self, leave, enter):
+    def pivot(self, leave: int, enter: int) -> None:
         """Pivot the tableau, exchanging `leave` (basic) and `enter` (cobasic).
 
         Performs an exact-arithmetic pivot on ``A[row][col]``
@@ -459,42 +471,42 @@ class Tableau:
         """
         n = self.n
         A = self.A
-        row = self.bascobas[leave]
-        col = self.bascobas[enter] - n
-        pivelt = A[row][col]  # becomes new determinant
-        negpiv = pivelt < 0
-        if negpiv:
-            pivelt = -pivelt
+        row = self.bas_cobas[leave]
+        col = self.bas_cobas[enter] - n
+        pivot_element = A[row][col]  # becomes new determinant
+        neg_piv = pivot_element < 0
+        if neg_piv:
+            pivot_element = -pivot_element
         for i in range(n):
             if i != row:
                 nonzero = A[i][col] != 0
                 for j in range(n + 2):
                     if j != col:
-                        tmp1 = A[i][j] * pivelt
+                        tmp1 = A[i][j] * pivot_element
                         if nonzero:
                             tmp2 = A[i][col] * A[row][j]
-                            if negpiv:
+                            if neg_piv:
                                 tmp1 += tmp2
                             else:
                                 tmp1 -= tmp2
                         A[i][j] = tmp1 // self.determinant
                 # row  i  has been dealt with, update  A[i][col]  safely
-                if nonzero and not negpiv:
+                if nonzero and not neg_piv:
                     A[i][col] = -A[i][col]
         # end of  for i
         A[row][col] = self.determinant
-        if negpiv:
+        if neg_piv:
             self.negate_row(row)
-        self.determinant = pivelt  # by construction always positive
+        self.determinant = pivot_element  # by construction always positive
         # update tableau variables
-        self.bascobas[leave] = col + n
-        self.whichvar[col + n] = leave
-        self.bascobas[enter] = row
-        self.whichvar[row] = enter
+        self.bas_cobas[leave] = col + n
+        self.which_var[col + n] = leave
+        self.bas_cobas[enter] = row
+        self.which_var[row] = enter
 
     # end of  pivot (leave, enter)
 
-    #  end of class tableau
+    #  end of class Tableau
 
 
 class RayTermination(Exception):
@@ -511,179 +523,44 @@ class RayTermination(Exception):
 
     Attributes
     ----------
+    enter : str
+        Name of the variable that could not enter the basis.
     tableau : Tableau
         The incomplete tableau at termination.
     """
 
-    def __init__(self, enter, tableau):
+    def __init__(self, enter: int, tableau: Tableau) -> None:
         self.tableau = tableau
-        self.enter = tableau.vartoa(enter)
+        self.enter: str = tableau.var_name(enter)
         super().__init__(
             "Ray termination when trying to enter " + self.enter
         )
 
 
-def _out_statistics(tableau):
+def _out_statistics(tableau: Tableau) -> columnprint.ColumnPrint:
     """Helper to output statistics of minimum ratio test."""
     n = tableau.n
-    lext = tableau.lextested
+    lex_tested = tableau.lex_tested
     stats = columnprint.ColumnPrint(n + 2)
-    stats.makeLeft(0)
+    stats.make_left(0)
     stats.sprint("lex-column")
     for i in range(n + 1):
         stats.iprint(i)
     stats.sprint("times tested")
     for i in range(n + 1):
-        stats.iprint(lext[i])
-    if lext[0] > 0:  # otherwise never a degeneracy
+        stats.iprint(lex_tested[i])
+    if lex_tested[0] > 0:  # otherwise never a degeneracy
         stats.sprint("% of pivots")
         for i in range(0, n + 1):
-            stats.iprint(round(lext[i] * 100 / tableau.pivotcount))
+            stats.iprint(round(lex_tested[i] * 100 / tableau.pivot_count))
         stats.sprint("avg comparisons")
         for i in range(n + 1):
-            if lext[i] > 0:
-                x = round(tableau.lexcomparisons[i] * 10 / lext[0])
+            if lex_tested[i] > 0:
+                x = round(tableau.lex_comparisons[i] * 10 / lex_tested[0])
                 stats.sprint(str(x / 10.0))
             else:
                 stats.sprint("-")
     return stats
-
-
-class LemkeCallback:
-    """Callback interface for observing the progress of `runlemke`.
-
-    Subclass and override any of these methods to log, print, or
-    otherwise react to the algorithm's progress (e.g. `PrintingCallback`).
-    All methods are no-ops by default.
-
-    Each pivot triggers `on_pivot_start`. Every pivot except the last of a
-    successful run is followed by `on_pivot_end`; the final pivot, which
-    makes ``z0`` leave the basis, is followed by `on_done` instead.
-    No callbacks are invoked when ``q >= 0``, since no pivoting is needed.
-    """
-
-    def on_start(self, lcp, tableau):
-        """Called once, after the initial tableau is built."""
-
-    def on_negcol(self, tableau):
-        """Called after the RHS column is negated to start pivoting."""
-
-    def on_pivot_start(self, tableau, leave, enter):
-        """Called before each pivot, with the chosen leave/enter variables."""
-
-    def on_pivot_end(self, tableau):
-        """Called after each pivot completes, except the final one
-        of a successful run (see `on_done`).
-        """
-
-    def on_done(self, tableau, result):
-        """Called once a complementary solution is found,
-        with the final `LcpResult`.
-        """
-
-    def on_ray_termination(self, tableau, result, message):
-        """Called if the algorithm terminates on a secondary ray,
-        with the (unsuccessful) `LcpResult` and the termination message.
-        """
-
-
-class PrintingCallback(LemkeCallback):
-    """A `LemkeCallback` that prints tableaus and progress to a stream.
-
-    Parameters
-    ----------
-    stream : file-like, optional
-        Where to print output. Default is `sys.stdout`.
-    verbose : bool, optional
-        If True, print the full tableau after every pivot,
-        not just at the start and end. Default is False.
-    z0 : bool, optional
-        If True, print the current value of ``z0`` before each pivot.
-        Default is False.
-    lexstats : bool, optional
-        If True, print lexicographic minimum-ratio test statistics
-        when the algorithm finishes successfully. Default is False.
-    """
-
-    def __init__(
-        self,
-        stream=None,
-        verbose=False,
-        z0=False,
-        lexstats=False,
-    ):
-        if stream is not None:
-            self.stream = stream
-        else:
-            self.stream = sys.stdout
-        self.verbose = verbose
-        self.z0 = z0
-        self.lexstats = lexstats
-
-    def printout(self, *args):
-        """Print `args` to this callback's stream."""
-        print(*args, file=self.stream)
-
-    def on_start(self, lcp, tableau):
-        """Print the LCP instance and the initial tableau."""
-        self.printout(f"verbose={self.verbose} z0={self.z0} lexstats={self.lexstats}")
-        self.printout(lcp)
-        self.printout("==================================")
-
-        # if (flags.binitabl)
-        self.printout("After filltableau:")
-        self.printout(tableau)
-
-    def on_negcol(self, tableau):
-        """Print the tableau after negating the RHS column, if `verbose`."""
-        # if (flags.binitabl)
-        if self.verbose:
-            self.printout("After negcol:")
-            self.printout(tableau)
-
-    def on_pivot_start(self, tableau, leave, enter):
-        """Print the chosen leaving/entering variables,
-        and `z0`'s value if `z0` is set.
-        """
-        if self.z0:  # printout progress of z0
-            z0_value = 0.0
-            if tableau.bascobas[0] < tableau.n:  # z0 is basic
-                z0_value = tableau.A[tableau.bascobas[0]][tableau.n + 1] / tableau.determinant
-            self.printout(f"pivot count = {tableau.pivotcount}, z0 = {z0_value}")
-
-        # if (flags.bdocupivot)
-        self.printout(f"leaving: {leave.ljust(5)} entering: {enter}")
-
-    def on_pivot_end(self, tableau):
-        """Print the tableau after the pivot completes, if `verbose`."""
-        if self.verbose:
-            self.printout(tableau)
-
-    def on_done(self, tableau, result):
-        """Print the final tableau, the `result`,
-        and lex-stats if `lexstats` is set.
-        """
-        if self.z0:
-            self.printout(f"pivot count = {tableau.pivotcount + 1}, z0 = 0.0")
-
-        # if (flags.binitabl)
-        self.printout("Final tableau:")
-        self.printout(tableau)
-
-        # if (flags.boutsol)
-        self.printout(result)
-
-        if self.lexstats:
-            # output statistics of minimum ratio test
-            self.printout(_out_statistics(tableau))
-
-    def on_ray_termination(self, tableau, result, message):
-        """Print the ray-termination message, tableau,
-        and the (unsuccessful) `result`.
-        """
-        self.printout(message)
-        self.printout(tableau)
-        self.printout(result)
 
 
 @dataclass(frozen=True)
@@ -753,34 +630,188 @@ class LcpResult:
         return status + str(sol)
 
 
+class LemkeCallback:
+    """Callback interface for observing the progress of `run_lemke`.
+
+    Subclass and override any of these methods to log, print, or
+    otherwise react to the algorithm's progress (e.g. `PrintingCallback`).
+    All methods are no-ops by default.
+
+    Each pivot triggers `on_pivot_start`. Every pivot except the last of a
+    successful run is followed by `on_pivot_end`; the final pivot, which
+    makes ``z0`` leave the basis, is followed by `on_done` instead.
+    No callbacks are invoked when ``q >= 0``, since no pivoting is needed.
+    """
+
+    def on_start(self, lcp: Lcp, tableau: Tableau) -> None:
+        """Called once, after the initial tableau is built."""
+
+    def on_neg_col(self, tableau: Tableau) -> None:
+        """Called after the RHS column is negated to start pivoting."""
+
+    def on_pivot_start(self, tableau: Tableau, leave: str, enter: str) -> None:
+        """Called before each pivot, with the chosen leave/enter variables."""
+
+    def on_pivot_end(self, tableau: Tableau) -> None:
+        """Called after each pivot completes, except the final one
+        of a successful run (see `on_done`).
+        """
+
+    def on_done(self, tableau: Tableau, result: LcpResult) -> None:
+        """Called once a complementary solution is found,
+        with the final `LcpResult`.
+        """
+
+    def on_ray_termination(
+        self, tableau: Tableau, result: LcpResult, message: str
+    ) -> None:
+        """Called if the algorithm terminates on a secondary ray,
+        with the (unsuccessful) `LcpResult` and the termination message.
+        """
+
+
+class PrintingCallback(LemkeCallback):
+    """A `LemkeCallback` that prints tableaus and progress to a stream.
+
+    Parameters
+    ----------
+    stream : file-like, optional
+        Where to print output. Default is `sys.stdout`.
+    verbose : bool, optional
+        If True, print the full tableau after every pivot,
+        not just at the start and end. Default is False.
+    z0 : bool, optional
+        If True, print the current value of ``z0`` before each pivot.
+        Default is False.
+    lex_stats : bool, optional
+        If True, print lexicographic minimum-ratio test statistics
+        when the algorithm finishes successfully. Default is False.
+    """
+
+    def __init__(
+        self,
+        stream: TextIO | None = None,
+        verbose: bool = False,
+        z0: bool = False,
+        lex_stats: bool = False,
+    ) -> None:
+        if stream is not None:
+            self.stream = stream
+        else:
+            self.stream = sys.stdout
+        self.verbose = verbose
+        self.z0 = z0
+        self.lex_stats = lex_stats
+
+    def printout(self, *args) -> None:
+        """Print `args` to this callback's stream."""
+        print(*args, file=self.stream)
+
+    def on_start(self, lcp: Lcp, tableau: Tableau) -> None:
+        """Print the LCP instance and the initial tableau."""
+        self.printout(
+            f"verbose={self.verbose} z0={self.z0} lexstats={self.lex_stats}"
+        )
+        self.printout(lcp)
+        self.printout("==================================")
+
+        # if (flags.binitabl)
+        self.printout("After filltableau:")
+        self.printout(tableau)
+
+    def on_neg_col(self, tableau: Tableau) -> None:
+        """Print the tableau after negating the RHS column, if `verbose`."""
+        # if (flags.binitabl)
+        if self.verbose:
+            self.printout("After negcol:")
+            self.printout(tableau)
+
+    def on_pivot_start(
+        self,
+        tableau: Tableau,
+        leave: str,
+        enter: str,
+    ) -> None:
+        """Print the chosen leaving/entering variables,
+        and `z0`'s value if `z0` is set."""
+
+        if self.z0:  # printout progress of z0
+            z0_value = 0.0
+            if tableau.bas_cobas[0] < tableau.n:  # z0 is basic
+                z0_value = (
+                    tableau.A[tableau.bas_cobas[0]][tableau.n + 1]
+                    / tableau.determinant
+                )
+            self.printout(f"pivot count = {tableau.pivot_count}, z0 = {z0_value}")
+
+        # if (flags.bdocupivot)
+        self.printout(f"leaving: {leave.ljust(5)} entering: {enter}")
+
+    def on_pivot_end(self, tableau: Tableau) -> None:
+        """Print the tableau after the pivot completes, if `verbose`."""
+        if self.verbose:
+            self.printout(tableau)
+
+    def on_done(self, tableau: Tableau, result: LcpResult) -> None:
+        """Print the final tableau, the `result`,
+        and lex-stats if `lex_stats` is set."""
+        if self.z0:
+            self.printout(f"pivot count = {tableau.pivot_count + 1}, z0 = 0.0")
+
+        # if (flags.binitabl)
+        self.printout("Final tableau:")
+        self.printout(tableau)
+
+        # if (flags.boutsol)
+        self.printout(result)
+
+        if self.lex_stats:
+            # output statistics of minimum ratio test
+            self.printout(_out_statistics(tableau))
+
+    def on_ray_termination(
+        self,
+        tableau: Tableau,
+        result: LcpResult,
+        message: str,
+    ) -> None:
+        """Print the ray-termination message, tableau,
+        and the (unsuccessful) `result`."""
+        self.printout(message)
+        self.printout(tableau)
+        self.printout(result)
+
+
 def result_from_tableau(
     tableau: Tableau,
     success: bool,
     ray_entering_variable: str | None = None,
 ) -> LcpResult:
+    """Build an `LcpResult` from the current state of `tableau`."""
+
     n = tableau.n
-    basis = set()
+    basis: set[str] = set()
 
     # [z0, z1, ..., zn, w1, ..., wn]
     solution = [fractions.Fraction(0) for _ in range(2 * n + 1)]
 
     for i in range(2 * n + 1):
-        row = tableau.bascobas[i]
+        row = tableau.bas_cobas[i]
         if row < n:  # i is a basic variable
             num = tableau.A[row][n + 1]
             # value of  Z(i):   scfa[Z(i)]*rhs[row] / (scfa[RHS]*det)
             # value of  W(i-n): rhs[row] / (scfa[RHS]*det)
             if i <= n:  # computing Z(i)
-                num *= tableau.scalefactor[i]
+                num *= tableau.scale_factor[i]
             solution[i] = fractions.Fraction(
                 num,
-                tableau.determinant * tableau.scalefactor[n + 1]
+                tableau.determinant * tableau.scale_factor[n + 1]
             )
-            basis.add(tableau.vartoa(i))
+            basis.add(tableau.var_name(i))
 
     return LcpResult(
         success=success,
-        num_pivots=tableau.pivotcount,
+        num_pivots=tableau.pivot_count,
         basis=frozenset(basis),
         z0=solution[0],
         z=tuple(solution[1:n + 1]),
@@ -789,7 +820,11 @@ def result_from_tableau(
     )
 
 
-def runlemke(*, lcp, callback=None):
+def run_lemke(
+    *,
+    lcp: Lcp,
+    callback: LemkeCallback | None = None
+) -> LcpResult:
     """Solve an LCP using Lemke's complementary pivoting algorithm.
 
     Parameters
@@ -815,9 +850,9 @@ def runlemke(*, lcp, callback=None):
     --------
     Basic usage with no callbacks:
 
-    >>> from lemke.lemke import Lcp, runlemke
+    >>> from lemke.lemke import Lcp, run_lemke
     >>> problem = Lcp.from_file("examples/lcp_2x2")
-    >>> result = runlemke(lcp=problem)
+    >>> result = run_lemke(lcp=problem)
     >>> result.success
     True
     >>> result.z
@@ -832,10 +867,10 @@ def runlemke(*, lcp, callback=None):
     Usage with a printing callback (prints the given lcp, z0 at each step,
     initial and final tableaus, and the final result):
 
-    >>> from lemke.lemke import Lcp, runlemke, PrintingCallback
+    >>> from lemke.lemke import Lcp, run_lemke, PrintingCallback
     >>> problem = Lcp.from_file("examples/lcp_2x2")
     >>> cb = PrintingCallback(z0=True)
-    >>> result = runlemke(lcp=problem, callback=cb)
+    >>> result = run_lemke(lcp=problem, callback=cb)
     verbose=False z0=True lexstats=False
     n= 2
     M=
@@ -890,43 +925,43 @@ def runlemke(*, lcp, callback=None):
         )
 
     try:
-        tabl = Tableau(lcp)
+        tableau = Tableau(lcp)
 
-        n = tabl.n
-        tabl.pivotcount = 1
+        n = tableau.n
+        tableau.pivot_count = 1
         # check if d is ok - TBC
         # if (flags.binitabl)
-        callback.on_start(lcp=lcp, tableau=tabl)
+        callback.on_start(lcp=lcp, tableau=tableau)
 
         # z0 enters the basis to obtain lex-feasible solution
         enter = 0
-        leave, z0leave = tabl.lexminvar(enter)
+        leave, z0_leave = tableau.lex_min_var(enter)
         # negate RHS
-        tabl.negate_col(n + 1)
-        callback.on_negcol(tableau=tabl)
+        tableau.negate_col(n + 1)
+        callback.on_neg_col(tableau=tableau)
 
         while True:  # main loop of complementary pivoting
-            tabl.test_table_vars()
-            tabl.assert_basic(leave, "docupivot")
-            tabl.assert_cobasic(enter, "docupivot")
+            tableau.test_table_vars()
+            tableau.assert_basic(leave, "docupivot")
+            tableau.assert_cobasic(enter, "docupivot")
 
             callback.on_pivot_start(
-                tableau=tabl,
-                leave=tabl.vartoa(leave),
-                enter=tabl.vartoa(enter),
+                tableau=tableau,
+                leave=tableau.var_name(leave),
+                enter=tableau.var_name(enter),
             )
-            tabl.pivot(leave, enter)
-            if z0leave:
+            tableau.pivot(leave, enter)
+            if z0_leave:
                 break
 
-            callback.on_pivot_end(tableau=tabl)
+            callback.on_pivot_end(tableau=tableau)
 
-            enter = tabl.complement(leave)
-            leave, z0leave = tabl.lexminvar(enter)
-            tabl.pivotcount += 1
+            enter = tableau.complement(leave)
+            leave, z0_leave = tableau.lex_min_var(enter)
+            tableau.pivot_count += 1
 
-        result = result_from_tableau(tabl, True)
-        callback.on_done(tableau=tabl, result=result)
+        result = result_from_tableau(tableau, True)
+        callback.on_done(tableau=tableau, result=result)
 
         return result
     except RayTermination as e:
@@ -957,25 +992,30 @@ def runlemke(*, lcp, callback=None):
     "--decimals",
     default=utils.DEFAULT_DECIMALS,
     show_default=True,
-    type=click.IntRange(min=0, max=utils.MAXDECIMALS),
+    type=click.IntRange(min=0, max=utils.MAX_DECIMALS),
     metavar="INTEGER",
     help="Allowed digits in input after decimal point",
 )
 @click.argument(
-    "lcpfilename",
+    "lcp_filename",
     type=click.Path(exists=True, readable=True, file_okay=True, dir_okay=False),
 )
-def main(verbose, z0, decimals, lcpfilename):
+def main(
+    verbose: bool,
+    z0: bool,
+    decimals: int,
+    lcp_filename: str,
+) -> None:
     """
     Tool for solving linear complementarity problems using Lemke's algorithm.
 
-    LCPFILENAME is the path to the input file.
+    LCP_FILENAME is the path to the input file.
     """
 
-    m = Lcp.from_file(lcpfilename, decimals)
+    lcp = Lcp.from_file(lcp_filename, decimals)
 
-    result = runlemke(
-        lcp=m,
+    result = run_lemke(
+        lcp=lcp,
         callback=PrintingCallback(stream=sys.stdout, verbose=verbose, z0=z0),
     )
 

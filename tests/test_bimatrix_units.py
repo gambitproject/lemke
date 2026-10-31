@@ -12,13 +12,13 @@ from lemke.bimatrix import (
     _submatrix,
     _supports,
     _uniform,
-    lh,
+    lh_cmd,
     trace_random_cmd,
     trace_uniform_cmd,
 )
 from lemke.lemke import LcpResult
 from lemke.randomstart import MAX_ACCURACY
-from lemke.utils import MAXDECIMALS
+from lemke.utils import MAX_DECIMALS
 
 
 # ---   PAYOFF MATRIX   --------------------------------------------------
@@ -32,8 +32,8 @@ def small_payoff_matrix():
 
 def test_payoff_matrix_init(small_payoff_matrix):
     pm = small_payoff_matrix
-    assert pm.numrows == 2
-    assert pm.numcolumns == 2
+    assert pm.num_rows == 2
+    assert pm.num_columns == 2
 
     assert all(
         isinstance(pm.matrix[i][j], Fraction)
@@ -51,31 +51,31 @@ def test_payoff_matrix_max_min(small_payoff_matrix):
 def test_payoff_matrix_negshift_negmatrix(small_payoff_matrix):
     pm = small_payoff_matrix
 
-    assert pm.negshift == 5  # int(max) + 1
+    assert pm.neg_shift == 5  # int(max) + 1
 
     expected = [
-        [pm.negshift - pm.matrix[0][0], pm.negshift - pm.matrix[0][1]],
-        [pm.negshift - pm.matrix[1][0], pm.negshift - pm.matrix[1][1]],
+        [pm.neg_shift - pm.matrix[0][0], pm.neg_shift - pm.matrix[0][1]],
+        [pm.neg_shift - pm.matrix[1][0], pm.neg_shift - pm.matrix[1][1]],
     ]
 
     for i, row in enumerate(expected):
         for j, value in enumerate(row):
-            assert pm.negmatrix[i][j] == value
+            assert pm.neg_matrix[i][j] == value
 
 
-def test_addrow_updates_shape_max_min(small_payoff_matrix):
+def test_add_row_updates_shape_max_min(small_payoff_matrix):
     pm = small_payoff_matrix
-    pm.addrow([Fraction(10), Fraction(-10)])
-    assert pm.numrows == 3
+    pm.add_row([Fraction(10), Fraction(-10)])
+    assert pm.num_rows == 3
     assert pm.matrix[2][0] == Fraction(10)
     assert pm.max == Fraction(10)
     assert pm.min == Fraction(-10)
 
 
-def test_addcolumn_updates_shape_max_min(small_payoff_matrix):
+def test_add_column_updates_shape_max_min(small_payoff_matrix):
     pm = small_payoff_matrix
-    pm.addcolumn([Fraction(-5), Fraction(20)])
-    assert pm.numcolumns == 3
+    pm.add_column([Fraction(-5), Fraction(20)])
+    assert pm.num_columns == 3
     assert pm.matrix[0][2] == Fraction(-5)
     assert pm.max == Fraction(20)
     assert pm.min == Fraction(-5)
@@ -101,15 +101,15 @@ def small_game_file(tmp_path):
 
 
 def test_bimatrix_dimensions(small_game_file):
-    G = Bimatrix.from_file(small_game_file)
-    assert G.A.numrows == 2
-    assert G.A.numcolumns == 2
-    assert G.B.numrows == 2
-    assert G.B.numcolumns == 2
+    game = Bimatrix.from_file(small_game_file)
+    assert game.A.num_rows == 2
+    assert game.A.num_columns == 2
+    assert game.B.num_rows == 2
+    assert game.B.num_columns == 2
 
 
 def test_bimatrix_payoff_values(small_game_file):
-    G = Bimatrix.from_file(small_game_file)
+    game = Bimatrix.from_file(small_game_file)
 
     expected = [
         [Fraction(1), Fraction(3, 4)],
@@ -117,7 +117,7 @@ def test_bimatrix_payoff_values(small_game_file):
     ]
     for i, row in enumerate(expected):
         for j, value in enumerate(row):
-            assert G.A.matrix[i][j] == value
+            assert game.A.matrix[i][j] == value
 
     expected = [
         [Fraction(2, 5), Fraction(3)],
@@ -125,7 +125,7 @@ def test_bimatrix_payoff_values(small_game_file):
     ]
     for i, row in enumerate(expected):
         for j, value in enumerate(row):
-            assert G.B.matrix[i][j] == value
+            assert game.B.matrix[i][j] == value
 
 
 def test_bimatrix_invalid_file(tmp_path):
@@ -139,56 +139,56 @@ def test_bimatrix_invalid_file(tmp_path):
 
 # ---   BIMATRIX LCP  ----------------------------------------------------
 def test_q_last_two_entries_are_minus_one(small_game_file):
-    G = Bimatrix.from_file(small_game_file)
-    lcp = G.createLCP()
+    game = Bimatrix.from_file(small_game_file)
+    lcp = game.create_lcp()
     assert lcp.q[-1] == -1
     assert lcp.q[-2] == -1
 
 
 def test_d_defaults_to_all_ones(small_game_file):
-    G = Bimatrix.from_file(small_game_file)
-    lcp = G.createLCP()
+    game = Bimatrix.from_file(small_game_file)
+    lcp = game.create_lcp()
     assert all(d == 1 for d in lcp.d)
 
 
 def test_player_block_signs(small_game_file):
-    G = Bimatrix.from_file(small_game_file)
-    lcp = G.createLCP()
-    m, n = G.A.numrows, G.A.numcolumns
-    lcpdim = m + n + 2
+    game = Bimatrix.from_file(small_game_file)
+    lcp = game.create_lcp()
+    m, n = game.A.num_rows, game.A.num_columns
+    lcp_dim = m + n + 2
 
     for i in range(m):
-        assert lcp.M[i][lcpdim - 2] == -1
+        assert lcp.M[i][lcp_dim - 2] == -1
     for i in range(m):
-        assert lcp.M[lcpdim - 2][i] == 1
+        assert lcp.M[lcp_dim - 2][i] == 1
 
     for j in range(m, m + n):
-        assert lcp.M[j][lcpdim - 1] == -1
+        assert lcp.M[j][lcp_dim - 1] == -1
     for j in range(m, m + n):
-        assert lcp.M[lcpdim - 1][j] == 1
+        assert lcp.M[lcp_dim - 1][j] == 1
 
 
 def test_payoff_blocks_use_negmatrix(small_game_file):
-    G = Bimatrix.from_file(small_game_file)
-    lcp = G.createLCP()
-    m, n = G.A.numrows, G.A.numcolumns
+    game = Bimatrix.from_file(small_game_file)
+    lcp = game.create_lcp()
+    m, n = game.A.num_rows, game.A.num_columns
     for i in range(m):
         for j in range(n):
-            assert lcp.M[i][j + m] == G.A.negmatrix[i][j]
+            assert lcp.M[i][j + m] == game.A.neg_matrix[i][j]
     for j in range(n):
         for i in range(m):
-            assert lcp.M[j + m][i] == G.B.negmatrix[i][j]
+            assert lcp.M[j + m][i] == game.B.neg_matrix[i][j]
 
 
 # ---   TRACE WITH RANDOM PRIORS  -------------------------------------------------
 @pytest.mark.parametrize("bad_priors", [0, -1, -100])
 def test_rejects_non_positive_num_priors(small_game_file, bad_priors):
-    G = Bimatrix.from_file(small_game_file)
+    game = Bimatrix.from_file(small_game_file)
     with pytest.raises(ValueError):
-        G.trace_random_priors(bad_priors)
+        game.trace_random_priors(bad_priors)
 
 
-# ---   RUNLEMKE FAILURE  -------------------------------------------------
+# ---   RUN_LEMKE FAILURE  -------------------------------------------------
 @pytest.fixture
 def lemke_failure(monkeypatch):
     failed_result = LcpResult(
@@ -201,23 +201,23 @@ def lemke_failure(monkeypatch):
         ray_entering_variable=None,
     )
     monkeypatch.setattr(
-        "lemke.lemke.runlemke",
+        "lemke.lemke.run_lemke",
         lambda **kwargs: failed_result,
     )
 
 
-def test_runLH_throws_on_lemke_failure(lemke_failure, small_game_file):
-    G = Bimatrix.from_file(small_game_file)
+def test_run_lh_throws_on_lemke_failure(lemke_failure, small_game_file):
+    game = Bimatrix.from_file(small_game_file)
 
-    with pytest.raises(RuntimeError, match=re.escape("runlemke() failed")):
-        G._run_lh(1)
+    with pytest.raises(RuntimeError, match=re.escape("run_lemke() failed")):
+        game._run_lh(1)
 
 
-def test_runtrace_throws_on_lemke_failure(lemke_failure, small_game_file):
-    G = Bimatrix.from_file(small_game_file)
+def test_run_trace_throws_on_lemke_failure(lemke_failure, small_game_file):
+    game = Bimatrix.from_file(small_game_file)
 
-    with pytest.raises(RuntimeError, match=re.escape("runlemke() failed")):
-        G._run_trace([0.5, 0.5], [0.4, 0.6])
+    with pytest.raises(RuntimeError, match=re.escape("run_lemke() failed")):
+        game._run_trace([0.5, 0.5], [0.4, 0.6])
 
 
 # ---   HELPER FUNCTIONS   --------------------------------------------------------
@@ -235,8 +235,8 @@ def test_runtrace_throws_on_lemke_failure(lemke_failure, small_game_file):
         ("", []),                                   # empty input string
     ]
 )
-def test_rangesplit(input, expected):
-    assert _range_split(input, endrange=10) == expected
+def test_range_split(input, expected):
+    assert _range_split(input, end_range=10) == expected
 
 
 @pytest.mark.parametrize("n", [1, 2, 3, 7])
@@ -263,13 +263,13 @@ def test_supports(eq, row_expected, col_expected):
 
 def test_submatrix():
     result = _submatrix(
-        A=[
+        matrix=[
             [1, 2, 3],
             [4, 5, 6],
             [7, 8, 9],
         ],
-        rowset=[0, 2],
-        colset=[1, 2],
+        row_set=[0, 2],
+        col_set=[1, 2],
     )
     expected = [
         [2, 3],
@@ -285,8 +285,8 @@ def test_submatrix():
 @pytest.mark.parametrize(
     "command, args",
     [
-        (lh, []),
-        (lh, [
+        (lh_cmd, []),
+        (lh_cmd, [
             "--decimals", "10",
             "--labels", "1-2",
         ]),
@@ -313,7 +313,7 @@ def test_cli_runs_without_error(command, args, small_game_file):
 
 
 @pytest.mark.parametrize("command", [
-    lh,
+    lh_cmd,
     trace_uniform_cmd,
     trace_random_cmd,
 ])
@@ -328,7 +328,7 @@ def test_cli_rejects_missing_file(command, tmp_path):
 
 
 @pytest.mark.parametrize("command", [
-    lh,
+    lh_cmd,
     trace_uniform_cmd,
     trace_random_cmd,
 ])
@@ -341,11 +341,11 @@ def test_cli_rejects_directory(command, tmp_path):
 
 
 @pytest.mark.parametrize("command", [
-    lh,
+    lh_cmd,
     trace_uniform_cmd,
     trace_random_cmd,
 ])
-@pytest.mark.parametrize("decimals", ["-1", f"{MAXDECIMALS + 1}"])
+@pytest.mark.parametrize("decimals", ["-1", f"{MAX_DECIMALS + 1}"])
 def test_cli_invalid_decimals(command, decimals, tmp_path):
     runner = CliRunner()
     result = runner.invoke(command, [str(tmp_path), "--decimals", decimals])

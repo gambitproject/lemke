@@ -133,20 +133,20 @@ class TestMapToTriangle:
 
 
 class TestPlotSimplex:
-    @pytest.mark.parametrize("bad_higherdim", [-1, 2, 11])
-    def test_higherdim_out_of_bounds(self, bad_higherdim):
-        with pytest.raises(ValueError, match="higherdim must be between"):
-            plot_simplex(higherdim=bad_higherdim)
+    @pytest.mark.parametrize("bad_higher_dim", [-1, 2, 11])
+    def test_higherdim_out_of_bounds(self, bad_higher_dim):
+        with pytest.raises(ValueError, match="higher_dim must be between"):
+            plot_simplex(higher_dim=bad_higher_dim)
 
     def test_higherdim_not_integer(self):
-        with pytest.raises(TypeError, match="higherdim must be an integer"):
-            plot_simplex(higherdim=3.5)
+        with pytest.raises(TypeError, match="higher_dim must be an integer"):
+            plot_simplex(higher_dim=3.5)
 
     @pytest.mark.parametrize("bad_accuracy", [0, MAX_ACCURACY + 1])
     def test_accuracy_out_of_bounds_checked_before_plotting(self, bad_accuracy):
         plt.close("all")
         with pytest.raises(ValueError, match="accuracy must be between"):
-            plot_simplex(numpoints=0, accuracy=bad_accuracy)
+            plot_simplex(num_points=0, accuracy=bad_accuracy)
         assert plt.get_fignums() == []
 
     def test_accuracy_not_integer(self):
@@ -156,7 +156,7 @@ class TestPlotSimplex:
     @pytest.mark.parametrize("higherdim", [3, 7])
     def test_runs_without_error(self, higherdim):
         with patch("matplotlib.pyplot.show"):
-            plot_simplex(numpoints=10, accuracy=100, higherdim=higherdim)
+            plot_simplex(num_points=10, accuracy=100, higher_dim=higherdim)
         plt.close("all")
 
 

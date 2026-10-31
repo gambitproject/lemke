@@ -32,7 +32,7 @@ A first plot
    from lemke.randomstart import plot_simplex
 
    random.seed(1)
-   plot_simplex(numpoints=300, accuracy=30)
+   plot_simplex(num_points=300, accuracy=30)
 
 ``random.seed`` is called first just to make the plot reproducible.
 
@@ -44,7 +44,7 @@ The function also prints the parameters it was called with:
 
 .. code-block:: python
 
-   numpoints=300 accuracy=30 higherdim=3 naiveplot=False
+   num_points=300 accuracy=30 higher_dim=3 naive_plot=False
 
 
 Changing the accuracy
@@ -61,7 +61,7 @@ red circles (which are also drawn smaller) lie closer to the dots:
    from lemke.randomstart import plot_simplex
 
    random.seed(1)
-   plot_simplex(numpoints=300, accuracy=100)
+   plot_simplex(num_points=300, accuracy=100)
 
 
 .. note::
@@ -73,7 +73,7 @@ Uniform versus naive sampling
 -----------------------------
 
 By default the points are sampled *uniformly* from the simplex.
-With ``naiveplot=True``, points are instead sampled by normalizing
+With ``naive_plot=True``, points are instead sampled by normalizing
 independent uniform random numbers. This is a common shortcut,
 but it is **not** uniform. The points are denser near the centre
 of the triangle and sparser near the corners:
@@ -85,13 +85,13 @@ of the triangle and sparser near the corners:
    from lemke.randomstart import plot_simplex
 
    random.seed(1)
-   plot_simplex(numpoints=300, accuracy=30, naiveplot=True)
+   plot_simplex(num_points=300, accuracy=30, naive_plot=True)
 
 
 Higher dimensions
 -----------------
 
-A triangle can only show three components. With ``higherdim`` argument greater
+A triangle can only show three components. With ``higher_dim`` argument greater
 than 3, points are sampled from the higher-dimensional simplex, and only the
 *middle three* components of each point are kept and renormalized to sum to 1.
 
@@ -102,16 +102,16 @@ than 3, points are sampled from the higher-dimensional simplex, and only the
    from lemke.randomstart import plot_simplex
 
    random.seed(1)
-   plot_simplex(numpoints=300, accuracy=30, higherdim=6)
+   plot_simplex(num_points=300, accuracy=30, higher_dim=6)
 
 
 The function also prints which positions are shown:
 
 .. code-block:: python
 
-   numpoints=300 accuracy=30 higherdim=6 naiveplot=False
+   num_points=300 accuracy=30 higher_dim=6 naive_plot=False
    show positions 2 .. 4 of 0 .. 5
 
 .. note::
 
-   ``higherdim`` must be an integer between 3 and 10.
+   ``higher_dim`` must be an integer between 3 and 10.
