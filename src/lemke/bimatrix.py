@@ -230,8 +230,8 @@ class bimatrix:
             If `decimals` is not an integer.
         ValueError
             If `decimals` is out of range, or a payoff is not a valid number.
-        SystemExit
-            If the number of payoff values in the file is incorrect.
+            If `decimals` is out of range, the file doesn't contain
+            the expected number of values, or contains an invalid number.
 
         Examples
         --------
@@ -253,9 +253,10 @@ class bimatrix:
         n = int(words[1])
         needfracs = 2 * m * n
         if len(words) != needfracs + 2:
-            print("in bimatrix file " + repr(filename) + ":")
-            print("m=", m, ", n=", n, ", need", needfracs, "payoffs, got", len(words) - 2)
-            exit(1)
+            raise ValueError(
+                f"in bimatrix file {filename!r}: "
+                f"m={m}, n={n}, need {needfracs} payoffs, got {len(words) - 2}"
+            )
         k = 2
         C = utils.tomatrix(m, n, words, k, decimals)
         A = payoffmatrix(C)

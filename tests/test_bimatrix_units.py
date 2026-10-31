@@ -128,11 +128,12 @@ def test_bimatrix_payoff_values(small_game_file):
             assert G.B.matrix[i][j] == value
 
 
-def test_bimatrix_invalid_file_exits(tmp_path):
+def test_bimatrix_invalid_file(tmp_path):
     bad_content = "2 2\n1 2 3\n"
     path = tmp_path / "bad_game.txt"
     path.write_text(bad_content)
-    with pytest.raises(SystemExit):
+
+    with pytest.raises(ValueError):
         bimatrix.from_file(str(path))
 
 
