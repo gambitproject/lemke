@@ -19,7 +19,7 @@ MAXDECIMALS = 20
 commentchars = "#%*"  # lines starting with these are ignored
 
 
-def validate_decimals(decimals):
+def _validate_decimals(decimals):
     if not isinstance(decimals, int):
         raise TypeError("decimals must be an integer")
     if decimals < 0 or decimals > MAXDECIMALS:
@@ -31,7 +31,7 @@ def validate_decimals(decimals):
 # read file into list of line-strings
 # truncate leading and trailing blanks
 # ignore blank lines and lines starting with commentchars
-def stripcomments(filename):
+def _strip_comments(filename):
     # http://stackoverflow.com/questions/12330522/reading-a-file-without-newlines
     newlist = []
     with open(filename) as temp:
@@ -45,7 +45,7 @@ def stripcomments(filename):
 
 
 # convert lines to words
-def towords(lines):
+def _to_words(lines):
     words = []
     for line in lines:
         ell = line.split()
@@ -54,7 +54,7 @@ def towords(lines):
     return words
 
 
-def tofraction(s: str, decimals: int) -> fractions.Fraction:
+def _to_fraction(s: str, decimals: int) -> fractions.Fraction:
     """Convert a string to an exact Fraction.
 
     If `s` contains '.', it's treated as a decimal literal and
@@ -82,19 +82,19 @@ def tofraction(s: str, decimals: int) -> fractions.Fraction:
 
 
 # create n-vector of fractions from words[start,start+n)
-def tovector(n, words, start, decimals):
+def _to_vector(n, words, start, decimals):
     vector = np.zeros(n, dtype=fractions.Fraction)
     for i in range(n):
-        vector[i] = tofraction(words[start + i], decimals)
+        vector[i] = _to_fraction(words[start + i], decimals)
     return vector
 
 
 # create (m,n)-matrix of fractions from words[start,start+m*n)
-def tomatrix(m, n, words, start, decimals):
+def _to_matrix(m, n, words, start, decimals):
     C = np.zeros((m, n), dtype=fractions.Fraction)
     k = start
     for i in range(m):
         for j in range(n):
-            C[i][j] = tofraction(words[k], decimals)
+            C[i][j] = _to_fraction(words[k], decimals)
             k += 1
     return C

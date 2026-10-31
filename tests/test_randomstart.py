@@ -10,12 +10,12 @@ from click.testing import CliRunner
 
 from lemke.randomstart import (
     MAX_ACCURACY,
+    _map_to_triangle,
+    _rand_in_simplex,
+    _renormalize,
+    _round_array,
     main,
-    maptotriangle,
     plot_simplex,
-    randInSimplex,
-    renormalize,
-    roundArray,
 )
 
 matplotlib.use("Agg")
@@ -25,15 +25,15 @@ matplotlib.use("Agg")
 @pytest.mark.parametrize("naive", [True, False])
 class TestRandInSimplex:
     def test_output_length(self, n, naive):
-        result = randInSimplex(n, naive)
+        result = _rand_in_simplex(n, naive)
         assert len(result) == n
 
     def test_sum_is_approx_one(self, n, naive):
-        result = randInSimplex(n, naive)
+        result = _rand_in_simplex(n, naive)
         assert sum(result) == pytest.approx(1.0)
 
     def test_components_in_range(self, n, naive):
-        result = randInSimplex(n, naive)
+        result = _rand_in_simplex(n, naive)
         assert all(0.0 <= x <= 1.0 for x in result)
 
 
@@ -58,19 +58,19 @@ class TestRandInSimplex:
 )
 class TestRoundArraySuccess:
     def test_output_length(self, array, accuracy):
-        result = roundArray(array, accuracy)
+        result = _round_array(array, accuracy)
         assert len(result) == len(array)
 
     def test_sum_is_exactly_one(self, array, accuracy):
-        result = roundArray(array, accuracy)
+        result = _round_array(array, accuracy)
         assert sum(result) == fractions.Fraction(1, 1)
 
     def test_returns_fractions(self, array, accuracy):
-        result = roundArray(array, accuracy)
+        result = _round_array(array, accuracy)
         assert all(isinstance(x, fractions.Fraction) for x in result)
 
     def test_denominators_match_accuracy(self, array, accuracy):
-        result = roundArray(array, accuracy)
+        result = _round_array(array, accuracy)
 
         # Check if requested accuracy is a multiple of the (possibly reduced) denominator
         assert all(accuracy % x.denominator == 0 for x in result)
@@ -80,45 +80,45 @@ class TestRoundArrayFailure:
     @pytest.mark.parametrize("bad_accuracy", [0, -1, MAX_ACCURACY + 1])
     def test_accuracy_out_of_bounds(self, bad_accuracy):
         with pytest.raises(ValueError, match="accuracy must be between"):
-            roundArray([0.5, 0.5], accuracy=bad_accuracy)
+            _round_array([0.5, 0.5], accuracy=bad_accuracy)
 
     def test_accuracy_not_integer(self):
         with pytest.raises(TypeError, match="accuracy must be an integer"):
-            roundArray([0.5, 0.5], accuracy=2.5)
+            _round_array([0.5, 0.5], accuracy=2.5)
 
     def test_accuracy_numpy_integer_accepted(self):
-        assert roundArray([0.5, 0.5], accuracy=np.int64(2)) == [
+        assert _round_array([0.5, 0.5], accuracy=np.int64(2)) == [
             fractions.Fraction(1, 2), fractions.Fraction(1, 2)
         ]
 
     def test_not_always_nearest_multiple(self):
         # 0.4 is rounded up to 1 so that the entries sum to 1
-        assert roundArray([0.4, 0.3, 0.3], accuracy=1) == [1, 0, 0]
+        assert _round_array([0.4, 0.3, 0.3], accuracy=1) == [1, 0, 0]
 
     def test_invalid_probabilities(self):
         with pytest.raises(ValueError, match="need probabilities"):
-            roundArray([1.0, 1.0])
+            _round_array([1.0, 1.0])
 
 
 class TestRenormalize:
     def test_all_zeros(self):
-        assert renormalize([0, 0, 0]) == [0, 0, 0]
+        assert _renormalize([0, 0, 0]) == [0, 0, 0]
 
     def test_single_element(self):
-        assert renormalize([42.0]) == [1.0]
+        assert _renormalize([42.0]) == [1.0]
 
     def test_already_normalized(self):
-        assert renormalize([0.2, 0.5, 0.3]) == pytest.approx([0.2, 0.5, 0.3])
+        assert _renormalize([0.2, 0.5, 0.3]) == pytest.approx([0.2, 0.5, 0.3])
 
     def test_standard(self):
-        assert renormalize([1, 2, 3, 4]) == pytest.approx([0.1, 0.2, 0.3, 0.4])
+        assert _renormalize([1, 2, 3, 4]) == pytest.approx([0.1, 0.2, 0.3, 0.4])
 
 
 class TestMapToTriangle:
     def test_vertices(self):
-        assert maptotriangle([1, 0, 0]) == pytest.approx((0.0, 0.0))
-        assert maptotriangle([0, 1, 0]) == pytest.approx((1.0, 0.0))
-        assert maptotriangle([0, 0, 1]) == pytest.approx((0.5, math.sqrt(3) / 2))
+        assert _map_to_triangle([1, 0, 0]) == pytest.approx((0.0, 0.0))
+        assert _map_to_triangle([0, 1, 0]) == pytest.approx((1.0, 0.0))
+        assert _map_to_triangle([0, 0, 1]) == pytest.approx((0.5, math.sqrt(3) / 2))
 
     @pytest.mark.parametrize(
         "vec, expected",
@@ -129,7 +129,7 @@ class TestMapToTriangle:
         ],
     )
     def test_known_points(self, vec, expected):
-        assert maptotriangle(vec) == pytest.approx(expected)
+        assert _map_to_triangle(vec) == pytest.approx(expected)
 
 
 class TestPlotSimplex:

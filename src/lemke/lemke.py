@@ -100,10 +100,10 @@ class Lcp:
         >>> print(problem.n)
         2
         """
-        utils.validate_decimals(decimals)
-        lines = utils.stripcomments(filename)
+        utils._validate_decimals(decimals)
+        lines = utils._strip_comments(filename)
         # flatten into words
-        words = utils.towords(lines)
+        words = utils._to_words(lines)
         if words[0] != "n=":
             raise ValueError(
                 f"lcp file {filename!r} must start with 'n=' lcpdim, e.g. 'n= 5', "
@@ -123,15 +123,15 @@ class Lcp:
         while k < len(words):
             if words[k] == "M=":
                 k += 1
-                M = utils.tomatrix(n, n, words, k, decimals)
+                M = utils._to_matrix(n, n, words, k, decimals)
                 k += n * n
             elif words[k] == "q=":
                 k += 1
-                q = utils.tovector(n, words, k, decimals)
+                q = utils._to_vector(n, words, k, decimals)
                 k += n
             elif words[k] == "d=":
                 k += 1
-                d = utils.tovector(n, words, k, decimals)
+                d = utils._to_vector(n, words, k, decimals)
                 k += n
             else:
                 raise ValueError(
@@ -291,21 +291,21 @@ class Tableau:
         else:
             return "z" + str(v)
 
-    def assertbasic(self, v, info):
+    def assert_basic(self, v, info):
         """Assert that variable v is basic."""
         if self.bascobas[v] >= self.n:
             raise RuntimeError(
                 f"({info}) Cobasic variable {self.vartoa(v)} should be basic"
             )
 
-    def assertcobasic(self, v, info):
+    def assert_cobasic(self, v, info):
         """Assert that variable v is cobasic."""
         if self.bascobas[v] < self.n:
             raise RuntimeError(
                 f"({info}) Basic variable {self.vartoa(v)} should be cobasic"
             )
 
-    def testtablvars(self):
+    def test_table_vars(self):
         """Check that `bascobas` and `whichvar` are consistent inverses."""
         n = self.n
         for i in range(2 * n + 1):
@@ -371,7 +371,7 @@ class Tableau:
         """
         n = self.n
         A = self.A
-        self.assertcobasic(enter, "Lexminvar")
+        self.assert_cobasic(enter, "Lexminvar")
         col = self.bascobas[enter] - n  # entering tableau column
         leavecand = []  # candidates(=rows) for leaving var
         for i in range(n):  # start with positives in entering col
@@ -432,12 +432,12 @@ class Tableau:
 
     # end of lexminvar(enter)
 
-    def negcol(self, col):
+    def negate_col(self, col):
         """Negate every entry in the given column of the tableau."""
         for i in range(self.n):
             self.A[i][col] = -self.A[i][col]
 
-    def negrow(self, row):
+    def negate_row(self, row):
         """Negate every entry in the given row of the tableau."""
         for j in range(self.n + 2):
             self.A[row][j] = -self.A[row][j]
@@ -484,7 +484,7 @@ class Tableau:
         # end of  for i
         A[row][col] = self.determinant
         if negpiv:
-            self.negrow(row)
+            self.negate_row(row)
         self.determinant = pivelt  # by construction always positive
         # update tableau variables
         self.bascobas[leave] = col + n
@@ -523,7 +523,7 @@ class RayTermination(Exception):
         )
 
 
-def outstatistics(tableau):
+def _out_statistics(tableau):
     """Helper to output statistics of minimum ratio test."""
     n = tableau.n
     lext = tableau.lextested
@@ -675,7 +675,7 @@ class PrintingCallback(LemkeCallback):
 
         if self.lexstats:
             # output statistics of minimum ratio test
-            self.printout(outstatistics(tableau))
+            self.printout(_out_statistics(tableau))
 
     def on_ray_termination(self, tableau, result, message):
         """Print the ray-termination message, tableau,
@@ -902,13 +902,13 @@ def runlemke(*, lcp, callback=None):
         enter = 0
         leave, z0leave = tabl.lexminvar(enter)
         # negate RHS
-        tabl.negcol(n + 1)
+        tabl.negate_col(n + 1)
         callback.on_negcol(tableau=tabl)
 
         while True:  # main loop of complementary pivoting
-            tabl.testtablvars()
-            tabl.assertbasic(leave, "docupivot")
-            tabl.assertcobasic(enter, "docupivot")
+            tabl.test_table_vars()
+            tabl.assert_basic(leave, "docupivot")
+            tabl.assert_cobasic(enter, "docupivot")
 
             callback.on_pivot_start(
                 tableau=tabl,

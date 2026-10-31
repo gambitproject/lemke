@@ -14,7 +14,7 @@ from .randomstart import MAX_ACCURACY
 # MAXDIM = 2000 # largest allowed value for m and n; not used yet
 
 
-def rangesplit(s, endrange=50):
+def _range_split(s, endrange=50):
     """Parse a comma-separated range string
     such as "1-3,10,4-7" into a list of integers.
     Open-ended ranges like "5-" extend to `endrange`.
@@ -88,7 +88,7 @@ class PayoffMatrix:
         self.numrows = m
         self.numcolumns = n
         self.matrix = AA
-        self.fullmaxmin()
+        self._full_max_min()
 
     def __str__(self):
         buf = columnprint.ColumnPrint(self.numcolumns)
@@ -100,7 +100,7 @@ class PayoffMatrix:
         out += ", negshift= " + str(self.negshift)
         return out
 
-    def updatemaxmin(self, fromrow, fromcol):
+    def _update_max_min(self, fromrow, fromcol):
         """Update `max`, `min`, and `negmatrix` over a submatrix range.
 
         Recomputes `max`/`min` by scanning entries from
@@ -124,11 +124,11 @@ class PayoffMatrix:
         self.negshift = int(self.max) + 1
         self.negmatrix = np.full((m, n), self.negshift, dtype=int) - self.matrix
 
-    def fullmaxmin(self):
+    def _full_max_min(self):
         """Recompute `max` and `min` over the entire matrix."""
         self.max = self.matrix[0][0]
         self.min = self.matrix[0][0]
-        self.updatemaxmin(0, 0)
+        self._update_max_min(0, 0)
 
     def addrow(self, row):
         """Append a row to the matrix and update max/min.
@@ -147,7 +147,7 @@ class PayoffMatrix:
             raise TypeError("New row must contain only Fraction values")
         self.matrix = np.vstack([self.matrix, row])
         self.numrows += 1
-        self.updatemaxmin(self.numrows - 1, 0)
+        self._update_max_min(self.numrows - 1, 0)
 
     def addcolumn(self, col):
         """Append a column to the matrix and update max/min.
@@ -166,7 +166,7 @@ class PayoffMatrix:
             raise TypeError("New column must contain only Fraction values")
         self.matrix = np.column_stack([self.matrix, col])
         self.numcolumns += 1
-        self.updatemaxmin(0, self.numcolumns - 1)
+        self._update_max_min(0, self.numcolumns - 1)
 
 
 class Bimatrix:
@@ -245,10 +245,10 @@ class Bimatrix:
         >>> print(game.A.numrows)
         2
         """
-        utils.validate_decimals(decimals)
-        lines = utils.stripcomments(filename)
+        utils._validate_decimals(decimals)
+        lines = utils._strip_comments(filename)
         # flatten into words
-        words = utils.towords(lines)
+        words = utils._to_words(lines)
         m = int(words[0])
         n = int(words[1])
         needfracs = 2 * m * n
@@ -258,10 +258,10 @@ class Bimatrix:
                 f"m={m}, n={n}, need {needfracs} payoffs, got {len(words) - 2}"
             )
         k = 2
-        C = utils.tomatrix(m, n, words, k, decimals)
+        C = utils._to_matrix(m, n, words, k, decimals)
         A = PayoffMatrix(C)
         k += m * n
-        C = utils.tomatrix(m, n, words, k, decimals)
+        C = utils._to_matrix(m, n, words, k, decimals)
         B = PayoffMatrix(C)
         return cls(A, B)
 
@@ -307,7 +307,7 @@ class Bimatrix:
         d = [1 for _ in range(lcpdim)]
         return lemke.Lcp(M, q, d)
 
-    def runLH(self, droppedlabel):
+    def _run_lh(self, droppedlabel):
         """Run Lemke-Howson from a given dropped label.
 
         Parameters
@@ -373,20 +373,20 @@ class Bimatrix:
         m = self.A.numrows
         n = self.A.numcolumns
         lhset = {}  # dict of equilibria and list by which label found
-        labels = rangesplit(LHstring, m + n)
+        labels = _range_split(LHstring, m + n)
         for k in labels:
-            eq = self.runLH(k)
+            eq = self._run_lh(k)
             if eq in lhset:
                 lhset[eq].append(k)
             else:
-                print("label", k, "found eq", str_eq(eq, m, n))
+                print("label", k, "found eq", _str_eq(eq, m, n))
                 lhset[eq] = [k]
         print("-------- equilibria found: --------")
         for eq in lhset:
-            print(str_eq(eq, m, n), "found by labels", str(lhset[eq]))
+            print(_str_eq(eq, m, n), "found by labels", str(lhset[eq]))
         return lhset
 
-    def runtrace(self, xprior, yprior):
+    def _run_trace(self, xprior, yprior):
         """Run the tracing procedure from a given prior.
 
         Parameters
@@ -443,9 +443,9 @@ class Bimatrix:
         m = self.A.numrows
         n = self.A.numcolumns
 
-        xprior = uniform(m)
-        yprior = uniform(n)
-        eq = self.runtrace(xprior, yprior)
+        xprior = _uniform(m)
+        yprior = _uniform(n)
+        eq = self._run_trace(xprior, yprior)
 
         self._print_trace_results(
             equilibria={eq: 1},
@@ -497,16 +497,16 @@ class Bimatrix:
         for k in range(trace):
             if seed is not None:
                 random.seed(10 * trace * seed + k)
-            x = randomstart.randInSimplex(m)
-            xprior = randomstart.roundArray(x, accuracy)
-            y = randomstart.randInSimplex(n)
-            yprior = randomstart.roundArray(y, accuracy)
+            x = randomstart._rand_in_simplex(m)
+            xprior = randomstart._round_array(x, accuracy)
+            y = randomstart._rand_in_simplex(n)
+            yprior = randomstart._round_array(y, accuracy)
             # print (f"{k=} {xprior=} {yprior=}")
-            eq = self.runtrace(xprior, yprior)
+            eq = self._run_trace(xprior, yprior)
             if eq in trset:
                 trset[eq] += 1
             else:
-                print("found eq", str_eq(eq, m, n), "index", self.eqindex(eq, m, n))
+                print("found eq", _str_eq(eq, m, n), "index", self.eqindex(eq, m, n))
                 trset[eq] = 1
 
         self._print_trace_results(trset, trace)
@@ -518,7 +518,7 @@ class Bimatrix:
 
         print("-------- statistics of equilibria found: --------")
         for eq, count in equilibria.items():
-            print(count, "times found", str_eq(eq, m, n))
+            print(count, "times found", _str_eq(eq, m, n))
         print(total_priors, "total priors,", len(equilibria), "equilibria found")
 
     def eqindex(self, eq, m, n):
@@ -540,13 +540,13 @@ class Bimatrix:
             ``0`` if the equilibrium is degenerate
             (supports of unequal size or singular submatrices).
         """
-        rowset, colset = supports(eq, m, n)
+        rowset, colset = _supports(eq, m, n)
         k, ell = len(rowset), len(colset)
         if k != ell:
             return 0
-        A1 = submatrix(self.A.negmatrix, rowset, colset)
+        A1 = _submatrix(self.A.negmatrix, rowset, colset)
         DA = np.linalg.det(A1)
-        B1 = submatrix(self.B.negmatrix, rowset, colset)
+        B1 = _submatrix(self.B.negmatrix, rowset, colset)
         DB = np.linalg.det(B1)
         sign = 2 * (k % 2) - 1  # -1 if even, 1 if odd
         if DA * DB == 0:
@@ -556,27 +556,27 @@ class Bimatrix:
         return -sign
 
 
-def uniform(n):
+def _uniform(n):
     """Return the uniform distribution over `n` outcomes as fractions."""
     return np.array([fractions.Fraction(1, n) for _ in range(n)])
 
 
-def str_eq(eq, m, n):
+def _str_eq(eq, m, n):
     """Format an equilibrium strategy pair as a readable string."""
     x = "(" + ",".join([str(x) for x in eq[0:m]]) + ")"
     y = "(" + ",".join([str(x) for x in eq[m: m + n]]) + ")"
-    rowset, colset = supports(eq, m, n)
+    rowset, colset = _supports(eq, m, n)
     return x + "," + y + "\n    supports: " + str(rowset) + str(colset)
 
 
-def supports(eq, m, n):
+def _supports(eq, m, n):
     """Return the index sets where each player's strategy is nonzero."""
     rowset = [i for i in range(m) if eq[i] != 0]
     colset = [j for j in range(n) if eq[m + j] != 0]
     return rowset, colset
 
 
-def submatrix(A, rowset, colset):
+def _submatrix(A, rowset, colset):
     """Extract a submatrix at the given row and column indices."""
     k, ell = len(rowset), len(colset)
     B = np.zeros((k, ell))
@@ -594,7 +594,7 @@ def main():
     pass
 
 
-def common_options(f):
+def _common_options(f):
     @click.argument(
         "filename",
         type=click.Path(exists=True, readable=True, file_okay=True, dir_okay=False),
@@ -619,7 +619,7 @@ def common_options(f):
 
 
 @main.command()
-@common_options
+@_common_options
 @click.option(
     "--labels",
     default="1-",
@@ -640,7 +640,7 @@ def trace():
 
 
 @trace.command(name="uniform")
-@common_options
+@_common_options
 def trace_uniform_cmd(filename, decimals):
     """Trace using a uniform prior."""
 
@@ -649,7 +649,7 @@ def trace_uniform_cmd(filename, decimals):
 
 
 @trace.command(name="random")
-@common_options
+@_common_options
 @click.option(
     "--priors",
     default=1,

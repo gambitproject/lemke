@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 MAX_ACCURACY = 10_000_000
 
 
-def randInSimplex(n, naive=False):
+def _rand_in_simplex(n, naive=False):
     """Generate a random n-tuple uniformly distributed on the unit simplex."""
     x = [0.0] * n
     if naive:  # random numbers re-normalized
@@ -33,7 +33,7 @@ def randInSimplex(n, naive=False):
         return x
 
 
-def validate_accuracy(accuracy):
+def _validate_accuracy(accuracy):
     """Check that `accuracy` is an integer between 1 and `MAX_ACCURACY`."""
     if not isinstance(accuracy, numbers.Integral):
         raise TypeError(f"accuracy must be an integer, got {type(accuracy).__name__}")
@@ -41,7 +41,7 @@ def validate_accuracy(accuracy):
         raise ValueError(f"accuracy must be between 1 and {MAX_ACCURACY}, got {accuracy}")
 
 
-def roundArray(x, accuracy=10000):
+def _round_array(x, accuracy=10000):
     """
     Round an array of probabilities `x` to multiples of 1 / `accuracy`
     that still sum to 1.
@@ -54,7 +54,7 @@ def roundArray(x, accuracy=10000):
 
     Example: accuracy=10, x=[0.18, .35, .47] becomes [2/10, 3/10, 5/10].
     """
-    validate_accuracy(accuracy)
+    _validate_accuracy(accuracy)
 
     n = len(x)
     sum = 0
@@ -77,7 +77,7 @@ def roundArray(x, accuracy=10000):
     return [fractions.Fraction(k, accuracy) for k in numerator]
 
 
-def renormalize(x):
+def _renormalize(x):
     """Rescale a list of numbers so that it sums to one."""
     s = sum(x)
     if s == 0:
@@ -85,7 +85,7 @@ def renormalize(x):
     return [k / s for k in x]
 
 
-def maptotriangle(vec):
+def _map_to_triangle(vec):
     """Map a point on the unit triangle (3D) to 2D coordinates
     in a triangle with corners at (0, 0), (1, 0), (0.5, sqrt(3)/2).
     """
@@ -128,7 +128,7 @@ def plot_simplex(numpoints=200, accuracy=20, higherdim=3, naiveplot=False):
         raise TypeError(f"higherdim must be an integer, got {type(higherdim).__name__}")
     if not 3 <= higherdim <= 10:
         raise ValueError(f"higherdim must be between 3 and 10, got {higherdim}")
-    validate_accuracy(accuracy)
+    _validate_accuracy(accuracy)
     print(
         f"numpoints={numpoints} accuracy={accuracy} higherdim={higherdim} naiveplot={naiveplot}"
     )
@@ -139,21 +139,21 @@ def plot_simplex(numpoints=200, accuracy=20, higherdim=3, naiveplot=False):
     fig1, ax = plt.subplots()
     ax.set_box_aspect(.866)
     # plt.axis('square')
-    x1, y1 = maptotriangle([1, 0, 0])
-    x2, y2 = maptotriangle([0, 1, 0])
-    x3, y3 = maptotriangle([0, 0, 1])
+    x1, y1 = _map_to_triangle([1, 0, 0])
+    x2, y2 = _map_to_triangle([0, 1, 0])
+    x3, y3 = _map_to_triangle([0, 0, 1])
     plt.plot([x1, x2, x3, x1], [y1, y2, y3, y1], "black")
 
     roundedpoints = []
     for _ in range(numpoints):
-        point = randInSimplex(higherdim, naiveplot)
+        point = _rand_in_simplex(higherdim, naiveplot)
         if higherdim > 3:
-            point = renormalize(point[segmentstart:segmentstart + 3])
-        roundedpoints.append(roundArray(point, accuracy))
-        x, y = maptotriangle(point)
+            point = _renormalize(point[segmentstart:segmentstart + 3])
+        roundedpoints.append(_round_array(point, accuracy))
+        x, y = _map_to_triangle(point)
         plt.plot([x], [y], "g.")
     for circ in roundedpoints:
-        x, y = maptotriangle(circ)
+        x, y = _map_to_triangle(circ)
         plt.scatter([x], [y], s=10000 // accuracy, facecolors="none",
                     edgecolors="r")
     plt.show()

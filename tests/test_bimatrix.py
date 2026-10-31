@@ -24,7 +24,7 @@ import pygambit
 import pytest
 
 from lemke import randomstart
-from lemke.bimatrix import Bimatrix, uniform
+from lemke.bimatrix import Bimatrix, _uniform
 
 FIXTURES_DIR = Path("tests/fixtures/bimatrix")
 
@@ -42,9 +42,9 @@ def trace_uniform_prior(game: Bimatrix) -> list[list[Fr]]:
     m = game.A.numrows
     n = game.A.numcolumns
 
-    xprior = uniform(m)
-    yprior = uniform(n)
-    eq = game.runtrace(xprior, yprior)
+    xprior = _uniform(m)
+    yprior = _uniform(n)
+    eq = game._run_trace(xprior, yprior)
 
     return [list(eq)]
 
@@ -67,11 +67,11 @@ def trace_random_priors(
     for k in range(trace):
         if seed is not None:
             random.seed(10 * trace * seed + k)
-        x = randomstart.randInSimplex(m)
-        xprior = randomstart.roundArray(x, accuracy)
-        y = randomstart.randInSimplex(n)
-        yprior = randomstart.roundArray(y, accuracy)
-        eq = game.runtrace(xprior, yprior)
+        x = randomstart._rand_in_simplex(m)
+        xprior = randomstart._round_array(x, accuracy)
+        y = randomstart._rand_in_simplex(n)
+        yprior = randomstart._round_array(y, accuracy)
+        eq = game._run_trace(xprior, yprior)
         if eq in trset:
             trset[eq] += 1
         else:

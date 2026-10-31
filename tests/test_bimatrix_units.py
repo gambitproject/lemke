@@ -8,13 +8,13 @@ from click.testing import CliRunner
 from lemke.bimatrix import (
     Bimatrix,
     PayoffMatrix,
+    _range_split,
+    _submatrix,
+    _supports,
+    _uniform,
     lh,
-    rangesplit,
-    submatrix,
-    supports,
     trace_random_cmd,
     trace_uniform_cmd,
-    uniform,
 )
 from lemke.lemke import LcpResult
 from lemke.randomstart import MAX_ACCURACY
@@ -210,14 +210,14 @@ def test_runLH_throws_on_lemke_failure(lemke_failure, small_game_file):
     G = Bimatrix.from_file(small_game_file)
 
     with pytest.raises(RuntimeError, match=re.escape("runlemke() failed")):
-        G.runLH(1)
+        G._run_lh(1)
 
 
 def test_runtrace_throws_on_lemke_failure(lemke_failure, small_game_file):
     G = Bimatrix.from_file(small_game_file)
 
     with pytest.raises(RuntimeError, match=re.escape("runlemke() failed")):
-        G.runtrace([0.5, 0.5], [0.4, 0.6])
+        G._run_trace([0.5, 0.5], [0.4, 0.6])
 
 
 # ---   HELPER FUNCTIONS   --------------------------------------------------------
@@ -236,12 +236,12 @@ def test_runtrace_throws_on_lemke_failure(lemke_failure, small_game_file):
     ]
 )
 def test_rangesplit(input, expected):
-    assert rangesplit(input, endrange=10) == expected
+    assert _range_split(input, endrange=10) == expected
 
 
 @pytest.mark.parametrize("n", [1, 2, 3, 7])
 def test_uniform(n):
-    result = uniform(n)
+    result = _uniform(n)
     assert len(result) == n
     assert sum(result) == Fraction(1, 1)
     assert all(isinstance(x, Fraction) for x in result)
@@ -256,13 +256,13 @@ def test_uniform(n):
     ]
 )
 def test_supports(eq, row_expected, col_expected):
-    row_result, col_result = supports(eq, m=2, n=2)
+    row_result, col_result = _supports(eq, m=2, n=2)
     assert row_result == row_expected
     assert col_result == col_expected
 
 
 def test_submatrix():
-    result = submatrix(
+    result = _submatrix(
         A=[
             [1, 2, 3],
             [4, 5, 6],
