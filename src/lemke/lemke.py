@@ -29,10 +29,6 @@ class lcp:
     d : list of int or fractions.Fraction
         Covering vector of length `n`.
 
-    Entries must be exact rationals (anything with integer ``numerator``
-    and ``denominator``, such as `int` or `fractions.Fraction`);
-    floats are not supported.
-
     Attributes
     ----------
     M : list of list of int or fractions.Fraction
@@ -65,13 +61,8 @@ class lcp:
     def from_file(cls, filename, decimals=utils.DEFAULT_DECIMALS):
         """Create an LCP instance from a text file.
 
-        Expects a file starting with ``n= <dim>``,
-        followed by keyword-labeled blocks ``M=``, ``q=``, ``d=``
-        giving the matrix and vectors as whitespace-separated numbers,
-        with the entries of ``M`` listed row by row.
-        Numbers may be given as integers, fractions (e.g. ``1/3``),
-        or decimals (e.g. ``0.3``).
-        Blank lines and lines starting with ``#``, ``%`` or ``*`` are ignored.
+        Read about how input files should be formatted
+        :doc:`here <../file_formats>`.
 
         Parameters
         ----------
@@ -99,16 +90,13 @@ class lcp:
 
         Examples
         --------
-        Given a file ``lcp.txt`` containing::
+        Given a file ``examples/lcp_2x2`` containing:
 
-            n= 2
-            M= 2 1
-               1 2
-            q= -1 -1
-            d= 1 1
+        .. literalinclude:: ../../examples/lcp_2x2
+           :language: text
 
         >>> from lemke.lemke import lcp
-        >>> problem = lcp.from_file("lcp.txt")
+        >>> problem = lcp.from_file("examples/lcp_2x2")
         >>> print(problem.n)
         2
         """
@@ -700,13 +688,31 @@ class PrintingCallback(LemkeCallback):
 
 @dataclass(frozen=True)
 class LcpResult:
+    """Result of solving a linear complementarity
+    problem (LCP) with Lemke's algorithm."""
+
     success: bool
+    """``True`` if a solution was found (``z0`` left the basis),
+    ``False`` if the algorithm terminated on a ray."""
+
     num_pivots: int
-    basis: frozenset[str]  # e.g. {'w1', 'z2', ...}
+    """Number of pivots performed."""
+
+    basis: frozenset[str]
+    """Names of the variables in the final basis, e.g. ``{'w1', 'z2'}``."""
+
     z0: fractions.Fraction
-    z: tuple[fractions.Fraction, ...]  # (z1, ..., zn)
-    w: tuple[fractions.Fraction, ...]  # (w1, ..., wn)
+    """Final value of the artificial variable. Equals zero on success."""
+
+    z: tuple[fractions.Fraction, ...]
+    """Final values of the variables ``(z1, ..., zn)``."""
+
+    w: tuple[fractions.Fraction, ...]
+    """Final values of the variables ``(w1, ..., wn)``."""
+
     ray_entering_variable: str | None
+    """Name of the entering variable when ray termination occurred,
+    or ``None`` if the algorithm terminated with a solution."""
 
     def __str__(self):
         pivot_word = "pivot" if self.num_pivots == 1 else "pivots"
@@ -810,26 +816,64 @@ def runlemke(*, lcp, callback=None):
     Basic usage with no callbacks:
 
     >>> from lemke.lemke import lcp, runlemke
-    >>> problem = lcp.from_file("lcp.txt")
+    >>> problem = lcp.from_file("examples/lcp_2x2")
     >>> result = runlemke(lcp=problem)
     >>> result.success
     True
     >>> result.z
-    (Fraction(1, 3), Fraction(1, 3))
+    (Fraction(2, 3), Fraction(2, 3))
     >>> print(result)
     Process finished successfully after 3 pivots.
     Solution found:
     basis=     z1  z2
-        z=  0 1/3 1/3
+        z=  0 2/3 2/3
         w=      0   0
 
-    Usage with a printing callback:
+    Usage with a printing callback (prints the given lcp, z0 at each step,
+    initial and final tableaus, and the final result):
 
     >>> from lemke.lemke import lcp, runlemke, PrintingCallback
-    >>> problem = lcp.from_file("lcp.txt")
-    >>> cb = PrintingCallback(verbose=True, z0=True)
+    >>> problem = lcp.from_file("examples/lcp_2x2")
+    >>> cb = PrintingCallback(z0=True)
     >>> result = runlemke(lcp=problem, callback=cb)
-    # prints the given lcp, tableau and z0 at each step, and the final result
+    verbose=False z0=True lexstats=False
+    n= 2
+    M=
+    1/2   1
+    -1  5/2
+    q=
+    -1   -1
+    d=
+    1     1
+    ==================================
+    After filltableau:
+    Determinant: -1
+    var  z0 z1 z2 RHS
+    scfa  1  2  2   1
+    <BLANKLINE>
+    w1    1  1  2  -1
+    w2    1 -2  5  -1
+    -----------------end of tableau-----------------
+    pivot count = 1, z0 = 0.0
+    leaving: w2    entering: z0
+    pivot count = 2, z0 = 1.0
+    leaving: w1    entering: z2
+    pivot count = 3, z0 = 1.0
+    leaving: z0    entering: z1
+    pivot count = 4, z0 = 0.0
+    Final tableau:
+    Determinant: 9
+    var  w2 z0 w1 RHS
+    scfa  1  1  1   1
+    <BLANKLINE>
+    z2   -1  3 -2   3
+    z1    2  3 -5   3
+    -----------------end of tableau-----------------
+    Process finished successfully after 3 pivots.
+    Solution found:
+    basis=     z1  z2
+        z=  0 2/3 2/3
+        w=      0   0
     """
     callback = callback or LemkeCallback()
 

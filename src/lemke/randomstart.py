@@ -1,3 +1,5 @@
+"""Random priors generation and visualization on the simplex."""
+
 import fractions
 import numbers
 import random
