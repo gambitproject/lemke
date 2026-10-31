@@ -176,6 +176,8 @@ you can explicitly check the :attr:`~lemke.lemke.LcpResult.basis` field:
    ['w2', 'z1']
 
 
+.. _ray-termination:
+
 Ray termination
 ---------------
 

@@ -915,7 +915,7 @@ def runlemke(*, lcp, callback=None):
     show_default=True,
     type=click.IntRange(min=0, max=utils.MAXDECIMALS),
     metavar="INTEGER",
-    help="Allowed payoff digits in input after decimal point",
+    help="Allowed digits in input after decimal point",
 )
 @click.argument(
     "lcpfilename",
