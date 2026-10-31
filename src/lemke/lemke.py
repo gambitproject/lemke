@@ -10,7 +10,7 @@ import click
 from . import columnprint, utils
 
 
-class lcp:
+class Lcp:
     r"""A linear complementarity problem instance `(M, q, d)`.
 
     Represents the LCP :math:`w = q + Mz,\ w, z \ge 0,\ z^T w = 0`,
@@ -41,8 +41,8 @@ class lcp:
     Examples
     --------
     >>> from fractions import Fraction as F
-    >>> from lemke.lemke import lcp
-    >>> problem = lcp(
+    >>> from lemke.lemke import Lcp
+    >>> problem = Lcp(
     ...     M=[[F(2), F(1)], [F(1), F(2)]],
     ...     q=[F(-1), F(-1)],
     ...     d=[F(1), F(1)],
@@ -76,7 +76,7 @@ class lcp:
 
         Returns
         -------
-        lcp
+        Lcp
             The LCP described by the file.
 
         Raises
@@ -95,8 +95,8 @@ class lcp:
         .. literalinclude:: ../../examples/lcp_2x2
            :language: text
 
-        >>> from lemke.lemke import lcp
-        >>> problem = lcp.from_file("examples/lcp_2x2")
+        >>> from lemke.lemke import Lcp
+        >>> problem = Lcp.from_file("examples/lcp_2x2")
         >>> print(problem.n)
         2
         """
@@ -145,7 +145,7 @@ class lcp:
         M = self.M
         q = self.q
         d = self.d
-        m = columnprint.columnprint(n)
+        m = columnprint.ColumnPrint(n)
         m.makeLeft(0)
         m.sprint("M=")
         m.newline()
@@ -165,7 +165,7 @@ class lcp:
     #  end of class lcp
 
 
-class tableau:
+class Tableau:
     """The tableau used to run Lemke's pivoting algorithm.
 
     Stores the LCP data as a scaled integer tableau
@@ -174,7 +174,7 @@ class tableau:
 
     Parameters
     ----------
-    Mqd : lcp
+    Mqd : Lcp
         The LCP instance to build the tableau from.
 
     Attributes
@@ -258,7 +258,7 @@ class tableau:
     def __str__(self):
         out = "Determinant: " + str(self.determinant)
         n = self.n
-        tabl = columnprint.columnprint(n + 3)
+        tabl = columnprint.ColumnPrint(n + 3)
         tabl.makeLeft(0)
         tabl.sprint("var")  # headers
         for j in range(n + 1):
@@ -506,12 +506,12 @@ class RayTermination(Exception):
     enter : int
         The variable that could not enter the basis
         (no positive pivot candidate).
-    tableau : tableau
+    tableau : Tableau
         The tableau at the point of termination.
 
     Attributes
     ----------
-    tableau : tableau
+    tableau : Tableau
         The incomplete tableau at termination.
     """
 
@@ -527,7 +527,7 @@ def outstatistics(tableau):
     """Helper to output statistics of minimum ratio test."""
     n = tableau.n
     lext = tableau.lextested
-    stats = columnprint.columnprint(n + 2)
+    stats = columnprint.ColumnPrint(n + 2)
     stats.makeLeft(0)
     stats.sprint("lex-column")
     for i in range(n + 1):
@@ -732,7 +732,7 @@ class LcpResult:
         # printout in columns to check complementarity
         n = len(self.w)
 
-        sol = columnprint.columnprint(n + 2)
+        sol = columnprint.ColumnPrint(n + 2)
 
         sol.sprint("basis=")
         # align basis elements with corresponding columns
@@ -754,7 +754,7 @@ class LcpResult:
 
 
 def result_from_tableau(
-    tableau: tableau,
+    tableau: Tableau,
     success: bool,
     ray_entering_variable: str | None = None,
 ) -> LcpResult:
@@ -794,7 +794,7 @@ def runlemke(*, lcp, callback=None):
 
     Parameters
     ----------
-    lcp : lcp
+    lcp : Lcp
         The LCP instance to solve.
     callback : LemkeCallback, optional
         Hook invoked at each step of the algorithm to observe or report progress.
@@ -815,8 +815,8 @@ def runlemke(*, lcp, callback=None):
     --------
     Basic usage with no callbacks:
 
-    >>> from lemke.lemke import lcp, runlemke
-    >>> problem = lcp.from_file("examples/lcp_2x2")
+    >>> from lemke.lemke import Lcp, runlemke
+    >>> problem = Lcp.from_file("examples/lcp_2x2")
     >>> result = runlemke(lcp=problem)
     >>> result.success
     True
@@ -832,8 +832,8 @@ def runlemke(*, lcp, callback=None):
     Usage with a printing callback (prints the given lcp, z0 at each step,
     initial and final tableaus, and the final result):
 
-    >>> from lemke.lemke import lcp, runlemke, PrintingCallback
-    >>> problem = lcp.from_file("examples/lcp_2x2")
+    >>> from lemke.lemke import Lcp, runlemke, PrintingCallback
+    >>> problem = Lcp.from_file("examples/lcp_2x2")
     >>> cb = PrintingCallback(z0=True)
     >>> result = runlemke(lcp=problem, callback=cb)
     verbose=False z0=True lexstats=False
@@ -890,7 +890,7 @@ def runlemke(*, lcp, callback=None):
         )
 
     try:
-        tabl = tableau(lcp)
+        tabl = Tableau(lcp)
 
         n = tabl.n
         tabl.pivotcount = 1
@@ -972,7 +972,7 @@ def main(verbose, z0, decimals, lcpfilename):
     LCPFILENAME is the path to the input file.
     """
 
-    m = lcp.from_file(lcpfilename, decimals)
+    m = Lcp.from_file(lcpfilename, decimals)
 
     result = runlemke(
         lcp=m,

@@ -35,7 +35,7 @@ def rangesplit(s, endrange=50):
     return result
 
 
-class payoffmatrix:
+class PayoffMatrix:
     """A single player's payoff matrix, stored as exact fractions.
 
     Wraps a matrix of `fractions.Fraction` entries as a NumPy array.
@@ -72,8 +72,8 @@ class payoffmatrix:
     Examples
     --------
     >>> from fractions import Fraction as F
-    >>> from lemke.bimatrix import payoffmatrix
-    >>> payoffs = payoffmatrix([[F(3), F(0)], [F(0), F(2)]])
+    >>> from lemke.bimatrix import PayoffMatrix
+    >>> payoffs = PayoffMatrix([[F(3), F(0)], [F(0), F(2)]])
     >>> payoffs.numrows
     2
     >>> print(payoffs.max)
@@ -91,7 +91,7 @@ class payoffmatrix:
         self.fullmaxmin()
 
     def __str__(self):
-        buf = columnprint.columnprint(self.numcolumns)
+        buf = columnprint.ColumnPrint(self.numcolumns)
         for i in range(self.numrows):
             for j in range(self.numcolumns):
                 buf.sprint(str(self.matrix[i][j]))
@@ -169,30 +169,30 @@ class payoffmatrix:
         self.updatemaxmin(0, self.numcolumns - 1)
 
 
-class bimatrix:
+class Bimatrix:
     """A two-player bimatrix game and methods to find its equilibria.
 
     Parameters
     ----------
-    A : payoffmatrix
+    A : PayoffMatrix
         Row player's payoff matrix.
-    B : payoffmatrix
+    B : PayoffMatrix
         Column player's payoff matrix.
 
     Attributes
     ----------
-    A : payoffmatrix
+    A : PayoffMatrix
         Row player's payoff matrix.
-    B : payoffmatrix
+    B : PayoffMatrix
         Column player's payoff matrix.
 
     Examples
     --------
     >>> from fractions import Fraction as F
-    >>> from lemke.bimatrix import bimatrix, payoffmatrix
-    >>> game = bimatrix(
-    ...     A=payoffmatrix([[F(3), F(0)], [F(0), F(2)]]),
-    ...     B=payoffmatrix([[F(2), F(0)], [F(0), F(7)]]),
+    >>> from lemke.bimatrix import Bimatrix, PayoffMatrix
+    >>> game = Bimatrix(
+    ...     A=PayoffMatrix([[F(3), F(0)], [F(0), F(2)]]),
+    ...     B=PayoffMatrix([[F(2), F(0)], [F(0), F(7)]]),
     ... )
     >>> game.A.numrows
     2
@@ -221,7 +221,7 @@ class bimatrix:
 
         Returns
         -------
-        bimatrix
+        Bimatrix
             The game described by the file.
 
         Raises
@@ -240,8 +240,8 @@ class bimatrix:
         .. literalinclude:: ../../examples/game
            :language: text
 
-        >>> from lemke.bimatrix import bimatrix
-        >>> game = bimatrix.from_file("examples/game")
+        >>> from lemke.bimatrix import Bimatrix
+        >>> game = Bimatrix.from_file("examples/game")
         >>> print(game.A.numrows)
         2
         """
@@ -259,10 +259,10 @@ class bimatrix:
             )
         k = 2
         C = utils.tomatrix(m, n, words, k, decimals)
-        A = payoffmatrix(C)
+        A = PayoffMatrix(C)
         k += m * n
         C = utils.tomatrix(m, n, words, k, decimals)
-        B = payoffmatrix(C)
+        B = PayoffMatrix(C)
         return cls(A, B)
 
     def __str__(self):
@@ -305,7 +305,7 @@ class bimatrix:
                 M[j + m][i] = self.B.negmatrix[i][j]
         # d for now
         d = [1 for _ in range(lcpdim)]
-        return lemke.lcp(M, q, d)
+        return lemke.Lcp(M, q, d)
 
     def runLH(self, droppedlabel):
         """Run Lemke-Howson from a given dropped label.
@@ -357,8 +357,8 @@ class bimatrix:
         is tried, then a summary of all distinct equilibria found with
         the list of labels that produced it:
 
-        >>> from lemke.bimatrix import bimatrix
-        >>> game = bimatrix.from_file("examples/game")
+        >>> from lemke.bimatrix import Bimatrix
+        >>> game = Bimatrix.from_file("examples/game")
         >>> result = game.LH("1-")
         label 1 found eq (1,0),(1,0)
             supports: [0][0]
@@ -432,8 +432,8 @@ class bimatrix:
         Run the tracing procedure from a uniform prior
         and print the equilibrium found:
 
-        >>> from lemke.bimatrix import bimatrix
-        >>> game = bimatrix.from_file("examples/game")
+        >>> from lemke.bimatrix import Bimatrix
+        >>> game = Bimatrix.from_file("examples/game")
         >>> game.trace_uniform_prior()
         -------- statistics of equilibria found: --------
         1 times found (0,1),(0,1)
@@ -478,8 +478,8 @@ class bimatrix:
         Run the tracing procedure from one random prior
         and print the equilibrium found:
 
-        >>> from lemke.bimatrix import bimatrix
-        >>> game = bimatrix.from_file("examples/game")
+        >>> from lemke.bimatrix import Bimatrix
+        >>> game = Bimatrix.from_file("examples/game")
         >>> game.trace_random_priors(1, seed=1)
         found eq (0,1),(0,1)
             supports: [1][1] index 1
@@ -629,7 +629,7 @@ def common_options(f):
 def lh(filename, decimals, labels):
     """Find equilibria using the Lemke-Howson algorithm."""
 
-    G = bimatrix.from_file(filename, decimals)
+    G = Bimatrix.from_file(filename, decimals)
     G.LH(labels)
 
 
@@ -644,7 +644,7 @@ def trace():
 def trace_uniform_cmd(filename, decimals):
     """Trace using a uniform prior."""
 
-    G = bimatrix.from_file(filename, decimals)
+    G = Bimatrix.from_file(filename, decimals)
     G.trace_uniform_prior()
 
 
@@ -674,5 +674,5 @@ def trace_uniform_cmd(filename, decimals):
 def trace_random_cmd(filename, decimals, priors, seed, accuracy):
     """Trace using random prior(s)."""
 
-    G = bimatrix.from_file(filename, decimals)
+    G = Bimatrix.from_file(filename, decimals)
     G.trace_random_priors(priors, seed, accuracy)

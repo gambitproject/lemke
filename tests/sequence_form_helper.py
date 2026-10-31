@@ -1,7 +1,7 @@
 from collections import defaultdict
 from fractions import Fraction as Fr
 
-from lemke.lemke import lcp, runlemke
+from lemke.lemke import Lcp, runlemke
 
 EMPTY: tuple[()] = ()  # empty sequence
 
@@ -9,7 +9,7 @@ PLAYER_1 = "Player 1"
 PLAYER_2 = "Player 2"
 
 
-def lcp_from_data(M: list[list[Fr]], q: list[Fr], d: list[Fr]) -> lcp:
+def lcp_from_data(M: list[list[Fr]], q: list[Fr], d: list[Fr]) -> Lcp:
     """Creates an LCP instance with given M, q, d."""
 
     n = len(q)
@@ -24,7 +24,7 @@ def lcp_from_data(M: list[list[Fr]], q: list[Fr], d: list[Fr]) -> lcp:
     q = [Fr(x) for x in q]
     d = [Fr(x) for x in d]
 
-    return lcp(M, q, d)
+    return Lcp(M, q, d)
 
 
 def build_sequence_form_lcp(game):

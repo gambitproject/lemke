@@ -44,8 +44,8 @@ with :math:`w = q + Mz \ge 0` and :math:`z^\top w = 0`, where
 .. doctest::
 
    >>> from fractions import Fraction as F
-   >>> from lemke.lemke import lcp, runlemke
-   >>> problem = lcp(
+   >>> from lemke.lemke import Lcp, runlemke
+   >>> problem = Lcp(
    ...    M=[
    ...       [F(1, 2), F(1)],
    ...       [F(-1), F(5, 2)],

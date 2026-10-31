@@ -21,7 +21,7 @@ All arithmetic is exact, using rational numbers.
 Creating an LCP
 ---------------
 
-An LCP is represented by the :class:`~lemke.lemke.lcp` class.
+An LCP is represented by the :class:`~lemke.lemke.Lcp` class.
 It can be created in two ways.
 
 Let's consider an LCP, where
@@ -43,8 +43,8 @@ Pass the matrix ``M`` (as a list of its rows) and the vectors ``q`` and ``d``:
 .. doctest::
 
    >>> from fractions import Fraction as F
-   >>> from lemke.lemke import lcp
-   >>> problem = lcp(
+   >>> from lemke.lemke import Lcp
+   >>> problem = Lcp(
    ...    M=[
    ...       [F(1, 2), F(1)],
    ...       [F(-1), F(5, 2)],
@@ -64,7 +64,7 @@ Pass the matrix ``M`` (as a list of its rows) and the vectors ``q`` and ``d``:
 ~~~~~~~~~~~~~~
 
 Alternatively, describe the problem in a text file and load it with
-:meth:`~lemke.lemke.lcp.from_file`.
+:meth:`~lemke.lemke.Lcp.from_file`.
 
 First, create a file such as ``examples/lcp_2x2``::
 
@@ -78,7 +78,7 @@ then load it:
 
 .. doctest::
 
-   >>> problem = lcp.from_file("examples/lcp_2x2")
+   >>> problem = Lcp.from_file("examples/lcp_2x2")
    >>> print(problem.n)
    2
 
@@ -148,7 +148,7 @@ It is still a valid solution. For example:
 
 .. doctest::
 
-   >>> problem = lcp(
+   >>> problem = Lcp(
    ...    M=[
    ...       [F(1), F(0)],
    ...       [F(0), F(1)],
@@ -190,7 +190,7 @@ never be non-negative:
 
 .. doctest::
 
-   >>> problem = lcp(
+   >>> problem = Lcp(
    ...   M=[[F(0)]],
    ...   q=[F(-1)],
    ...   d=[F(1)],
@@ -232,7 +232,7 @@ tableaus and the chosen leaving and entering variables:
 .. doctest::
 
    >>> from lemke.lemke import PrintingCallback
-   >>> problem = lcp.from_file("examples/lcp_2x2")
+   >>> problem = Lcp.from_file("examples/lcp_2x2")
    >>> result = runlemke(lcp=problem, callback=PrintingCallback())
    verbose=False z0=False lexstats=False
    n= 2

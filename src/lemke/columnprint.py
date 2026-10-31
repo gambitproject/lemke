@@ -1,7 +1,7 @@
 """Automatic pretty printing in columns."""
 
 
-class columnprint:
+class ColumnPrint:
     """Buffer that collects strings and prints them aligned in columns.
 
     Parameters
@@ -79,7 +79,7 @@ class columnprint:
 if __name__ == "__main__":
     print("example with 3 columns, first left-justified")
     print("============================================")
-    M = columnprint(3)
+    M = ColumnPrint(3)
     M.makeLeft(0)
     M.sprint("z0")
     M.sprint("z1")
@@ -89,7 +89,7 @@ if __name__ == "__main__":
     print(M)
     print("example with 2 columns")
     print("======================")
-    M = columnprint(2)
+    M = ColumnPrint(2)
     M.sprint("z0")
     M.sprint("z1")
     for i in [1, 200, 3, 20000, 0, -1, 88, 9]:
