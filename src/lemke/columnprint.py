@@ -1,12 +1,23 @@
-# automatic pretty printing in columns
+"""Automatic pretty printing in columns."""
+
 
 class columnprint:
+    """Buffer that collects strings and prints them aligned in columns.
 
-    # create buffer with c columns, at least 1
+    Parameters
+    ----------
+    num_cols : int
+        Number of columns, at least 1.
+
+    Raises
+    ------
+    ValueError
+        If `num_cols` is less than 1.
+    """
+
     def __init__(self, c):  # void colset(int c);
         if c < 1:
-            print("need positive number of columns, not", c)
-            raise Exception
+            raise ValueError(f"Need positive number of columns, got {c}")
         self.buf = []
         self.ncols = c
         self.colwidth = [0] * c
@@ -15,8 +26,8 @@ class columnprint:
         self.currcol = 0
         self.line = []
 
-    # create string, intermittent lines (not last line) separated by \n
     def __str__(self):  # colout(void)
+        """Create string, intermittent lines (not last line) separated by \n."""
         out = ""
         for ell in self.buf:
             out += self.prline(ell) + "\n"
@@ -26,8 +37,8 @@ class columnprint:
             out += self.prline(self.line)
         return out
 
-    # (private) string from line, which is a list of strings
     def prline(self, line):  # prline(char *s)
+        """(Private) string from line, which is a list of strings."""
         out = ""
         for i, word in enumerate(line):
             if self.widthsign[i] == 1:
@@ -39,21 +50,21 @@ class columnprint:
                 out += " "  # single spacing here
         return out.rstrip()
 
-    # print integer i into the current column
     def iprint(self, i):  # colipr(i)
+        """Print integer i into the current column."""
         self.sprint(str(i))
 
-    # make column c in  0..ncols-1  left-adjusted
     def makeLeft(self, c):  # colleft(int c)
+        """Make column c in  0..ncols-1  left-adjusted."""
         self.widthsign[c] = -1
 
-    # terminate current line early.  blank line if in column 0
     def newline(self):  # colnl(void);
+        """Terminate current line early. Blank line if in column 0."""
         for _ in range(self.ncols - self.currcol):
             self.sprint("")
 
-    # store string  s  into the current column, updating column width
     def sprint(self, s):  # colpr(const char *s)
+        """Store string  s  into the current column, updating column width."""
         w = len(s)
         if self.colwidth[self.currcol] < w:
             self.colwidth[self.currcol] = w
