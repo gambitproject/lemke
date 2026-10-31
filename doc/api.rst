@@ -8,5 +8,3 @@ API reference
    lemke.lemke
    lemke.bimatrix
    lemke.randomstart
-   lemke.utils
-   lemke.columnprint
