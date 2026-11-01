@@ -84,7 +84,7 @@ def _renormalize(x: list[float]) -> list[float]:
     return [k / s for k in x]
 
 
-def _map_to_triangle(vec: list[float]) -> tuple[float, float]:
+def _map_to_triangle(vec: list[float] | list[fractions.Fraction]) -> tuple[float, float]:
     """Map a point on the unit triangle (3D) to 2D coordinates
     in a triangle with corners at (0, 0), (1, 0), (0.5, sqrt(3)/2).
     """

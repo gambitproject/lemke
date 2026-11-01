@@ -429,7 +429,7 @@ class Bimatrix:
         lcp = self.create_lcp()
         a_y = self.A.neg_matrix @ y_prior
         x_b = x_prior @ self.B.neg_matrix
-        lcp.d = np.hstack((a_y, x_b, [1, 1]))
+        lcp.d = np.hstack((a_y, x_b, [1, 1])).tolist()
 
         result = lemke.run_lemke(lcp=lcp)
         if not result.success:

@@ -3,6 +3,7 @@
 import fractions
 import math  # gcd
 import sys
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TextIO
@@ -55,14 +56,14 @@ class Lcp:
 
     def __init__(
         self,
-        M: list[list[int | fractions.Fraction]],
-        q: list[int | fractions.Fraction],
-        d: list[int | fractions.Fraction],
+        M: Sequence[Sequence[int | fractions.Fraction]],
+        q: Sequence[int | fractions.Fraction],
+        d: Sequence[int | fractions.Fraction],
     ) -> None:
-        self.M = M
-        self.q = q
-        self.d = d
-        self.n: int = len(d)
+        self.M: list[list[int | fractions.Fraction]] = [list(row) for row in M]
+        self.q: list[int | fractions.Fraction] = list(q)
+        self.d: list[int | fractions.Fraction] = list(d)
+        self.n: int = len(self.d)
 
     @classmethod
     def from_file(
@@ -129,20 +130,20 @@ class Lcp:
                 f"n={n}, need keywords 'M=' 'q=' 'd=' and "
                 f"n*n + n + n = {need_fracs} fractions, got {len(words) - 5}"
             )
-        M, q, d = None, None, None
+
         k = 2  # index in words
         while k < len(words):
             if words[k] == "M=":
                 k += 1
-                M = utils._to_matrix(n, n, words, k, decimals)
+                M = utils._to_matrix(n, n, words, k, decimals).tolist()
                 k += n * n
             elif words[k] == "q=":
                 k += 1
-                q = utils._to_vector(n, words, k, decimals)
+                q = utils._to_vector(n, words, k, decimals).tolist()
                 k += n
             elif words[k] == "d=":
                 k += 1
-                d = utils._to_vector(n, words, k, decimals)
+                d = utils._to_vector(n, words, k, decimals).tolist()
                 k += n
             else:
                 raise ValueError(
@@ -920,7 +921,7 @@ def run_lemke(
             basis=frozenset(f"w{i + 1}" for i in range(lcp.n)),
             z0=fractions.Fraction(0),
             z=(fractions.Fraction(0),) * lcp.n,
-            w=tuple(lcp.q),
+            w=tuple(fractions.Fraction(x) for x in lcp.q),
             ray_entering_variable=None,
         )
 
