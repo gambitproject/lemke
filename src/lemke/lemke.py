@@ -130,6 +130,10 @@ class Lcp:
                 f"n={n}, need keywords 'M=' 'q=' 'd=' and "
                 f"n*n + n + n = {need_fracs} fractions, got {len(words) - 5}"
             )
+        if any(words.count(keyword) != 1 for keyword in ("M=", "q=", "d=")):
+            raise ValueError(
+                f"in lcp file {filename!r}: expected exactly one 'M=', 'q=', and 'd='"
+            )
 
         k = 2  # index in words
         while k < len(words):
