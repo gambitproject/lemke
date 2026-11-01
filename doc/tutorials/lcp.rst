@@ -165,7 +165,7 @@ It is still a valid solution. For example:
 Here :math:`z_2 = w_2 = 0`, so the second complementary pair is degenerate.
 Degeneracy is handled by the lexicographic minimum ratio test, which
 prevents the algorithm from cycling. You can inspect how often that test
-was needed with the ``lexstats`` option of the printing callback (see below).
+was needed with the ``lex_stats`` option of the printing callback (see below).
 
 Since in this case it is not clear which variables are basic,
 you can explicitly check the :attr:`~lemke.lemke.LcpResult.basis` field:
@@ -273,7 +273,7 @@ The options are:
 
 * ``verbose``: print the full tableau after every pivot,
 * ``z0``: print the current value of :math:`z_0` before each pivot,
-* ``lexstats``: print minimum-ratio test statistics at the end,
+* ``lex_stats``: print minimum-ratio test statistics at the end,
 * ``stream``: write to a file-like object instead of ``sys.stdout``.
 
 Writing your own callback
