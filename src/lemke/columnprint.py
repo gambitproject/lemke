@@ -6,13 +6,13 @@ class columnprint:
 
     Parameters
     ----------
-    num_cols : int
+    c : int
         Number of columns, at least 1.
 
     Raises
     ------
     ValueError
-        If `num_cols` is less than 1.
+        If `c` is less than 1.
     """
 
     def __init__(self, c):  # void colset(int c);
