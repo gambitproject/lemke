@@ -292,26 +292,26 @@ class Bimatrix:
         lcp_dim = m + n + 2
 
         q = [0 for _ in range(lcp_dim)]
-        matrix = [[0] * lcp_dim for _ in range(lcp_dim)]
+        M = [[0] * lcp_dim for _ in range(lcp_dim)]
 
         q[lcp_dim - 2] = -1
         q[lcp_dim - 1] = -1
 
         for i in range(m):
-            matrix[lcp_dim - 2][i] = 1
-            matrix[i][lcp_dim - 2] = -1
+            M[lcp_dim - 2][i] = 1
+            M[i][lcp_dim - 2] = -1
         for j in range(m, m + n):
-            matrix[lcp_dim - 1][j] = 1
-            matrix[j][lcp_dim - 1] = -1
+            M[lcp_dim - 1][j] = 1
+            M[j][lcp_dim - 1] = -1
         for i in range(m):
             for j in range(n):
-                matrix[i][j + m] = self.A.neg_matrix[i][j]
+                M[i][j + m] = self.A.neg_matrix[i][j]
         for j in range(n):
             for i in range(m):
-                matrix[j + m][i] = self.B.neg_matrix[i][j]
+                M[j + m][i] = self.B.neg_matrix[i][j]
         # d for now
         d = [1 for _ in range(lcp_dim)]
-        return lemke.Lcp(matrix, q, d)
+        return lemke.Lcp(M, q, d)
 
     def _run_lh(self, dropped_label: int) -> tuple[fractions.Fraction, ...]:
         """Run Lemke-Howson from a given dropped label.
